@@ -135,8 +135,9 @@ body{background:var(--bg);color:var(--text);font-family:'SF Mono','Menlo','Fira 
   <h1>XAU/USD SWING HEAVY</h1>
   <div class="sub">300 — 1000 PIP HUNTER</div>
   <input id="tdKey" type="text" placeholder="TwelveData API Key" autocomplete="off" spellcheck="false">
+  <input id="aiKey" type="password" placeholder="Anthropic API Key (sk-ant-...)" autocomplete="off" spellcheck="false">
   <button id="startBtn" onclick="initApp()">INICIAR DASHBOARD</button>
-  <div class="note">Tu key se guarda en localStorage. No se envía a servidores externos. La API de Anthropic funciona integrada sin key.</div>
+  <div class="note">Ambas keys se guardan en localStorage de tu navegador. No se envían a ningún servidor externo — solo se usan en llamadas directas a cada API desde tu dispositivo.</div>
 </div>
 
 <!-- APP -->
@@ -175,7 +176,7 @@ body{background:var(--bg);color:var(--text);font-family:'SF Mono','Menlo','Fira 
 // STATE
 // ═══════════════════════════════════════════════════════════════
 const S = {
-  tdKey:'', gold:null, quote:null, status:'connecting',
+  tdKey:'', aiKey:'', gold:null, quote:null, status:'connecting',
   c4h:[], cD:[], cW:[],
   corr:{btc:null,oil:null},
   tab:'overview',
@@ -225,15 +226,19 @@ function findSwingZones(c){if(c.length<20)return{demand:[],supply:[]};const d=[]
 // ═══════════════════════════════════════════════════════════════
 function initApp(){
   const key=document.getElementById('tdKey').value.trim();
-  if(!key)return;
-  S.tdKey=key;localStorage.setItem('td_key',key);
+  const aikey=document.getElementById('aiKey').value.trim();
+  if(!key||!aikey){alert('Necesitas ambas API keys');return}
+  S.tdKey=key;S.aiKey=aikey;
+  localStorage.setItem('td_key',key);localStorage.setItem('ai_key',aikey);
   document.getElementById('setup').style.display='none';
   document.getElementById('app').style.display='block';
   setupTabs();render();
-  // Auto-refresh price every 30s after initial pipeline
   setInterval(()=>{if(!S.pipeline.running)refreshPrice()},30000);
 }
-window.addEventListener('DOMContentLoaded',()=>{const k=localStorage.getItem('td_key');if(k)document.getElementById('tdKey').value=k});
+window.addEventListener('DOMContentLoaded',()=>{
+  const k=localStorage.getItem('td_key');if(k)document.getElementById('tdKey').value=k;
+  const a=localStorage.getItem('ai_key');if(a)document.getElementById('aiKey').value=a;
+});
 
 function setupTabs(){document.querySelectorAll('#tabBar button').forEach(b=>{b.addEventListener('click',()=>{S.tab=b.dataset.tab;document.querySelectorAll('#tabBar button').forEach(x=>x.classList.remove('active'));b.classList.add('active');render()})})}
 
@@ -280,12 +285,16 @@ async function runPipeline(){
           S.pipeline.running=false;
           S.aiLoading=false;
           render();
-          return; // Stop pipeline
+          return;
         }
         phase.status='retrying';
+        phase.lastError=e.message;
         render();
-        // Backoff: 3s, 6s, 10s, 15s, 20s...
-        const wait=Math.min(20,3+phase.retries*3);
+        // Rate limit = longer wait, normal error = shorter
+        const isRL=e.message==='RATE_LIMIT'||e.message.includes('rate limit')||e.message.includes('429');
+        const wait=isRL?Math.min(65,(20+phase.retries*15)):Math.min(20,3+phase.retries*3);
+        phase.waitSec=wait;
+        render();
         await sleep(wait*1000);
         phase.status='active';
         render();
@@ -349,12 +358,25 @@ async function phaseCorrelations(){
 async function callAnthropic(prompt,maxTk=1000,search=false){
   const body={model:'claude-sonnet-4-20250514',max_tokens:maxTk,messages:[{role:'user',content:prompt}]};
   if(search) body.tools=[{type:'web_search_20250305',name:'web_search'}];
-  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const r=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':S.aiKey,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body:JSON.stringify(body)
+  });
+  if(!r.ok){
+    const err=await r.json().catch(()=>({}));
+    if(r.status===429||err.error?.message?.includes('rate limit'))throw new Error('RATE_LIMIT');
+    if(r.status===401)throw new Error('API key inválida — revisa tu Anthropic key');
+    throw new Error(err.error?.message||`HTTP ${r.status}`);
+  }
   const d=await r.json();
   if(d.error){
-    if(d.error.message?.includes('rate limit')||d.error.message?.includes('credit')){
-      throw new Error('RATE_LIMIT');
-    }
+    if(d.error.message?.includes('rate limit')||d.error.message?.includes('credit'))throw new Error('RATE_LIMIT');
     throw new Error(d.error.message);
   }
   const txt=d.content?.filter(b=>b.type==='text').map(b=>b.text).join('')||'';
@@ -457,8 +479,8 @@ function renderPipeline(){
     let statusText='Pendiente';
     if(p.status==='active')statusText='Ejecutando...';
     else if(p.status==='done')statusText='Completado ✓';
-    else if(p.status==='retrying')statusText=`Reintentando (${p.retries}/${p.maxRetries})...`;
-    else if(p.status==='error')statusText=`Falló tras ${p.retries} reintentos`;
+    else if(p.status==='retrying')statusText=`Reintento ${p.retries}/${p.maxRetries} — espera ${p.waitSec||'?'}s${p.lastError?' ('+p.lastError.slice(0,40)+')':''}`;
+    else if(p.status==='error')statusText=`Falló: ${p.lastError||'error desconocido'}`;
 
     h+=`<div class="pipe-step ${cls}">
       <div class="pipe-icon ${iconCls}">${icon}</div>
