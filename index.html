@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>XAU/USD Swing Heavy — 300-1000 Pip Hunter</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#06090f">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#06090f;--card:#0c1219;--border:#151e2d;--text:#b8c5d8;--dim:#4a5a72;
+--accent:#c9a84c;--green:#10b981;--red:#ef4444;--blue:#3b82f6;--orange:#f59e0b;--purple:#a855f7;
+}
+body{background:var(--bg);color:var(--text);font-family:'SF Mono','Menlo','Fira Code','JetBrains Mono',monospace;font-size:12px;max-width:460px;margin:0 auto;min-height:100vh;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* Setup Screen */
+#setup{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center}
+#setup h1{font-size:14px;color:var(--accent);letter-spacing:3px;margin-bottom:4px}
+#setup .sub{font-size:10px;color:var(--dim);margin-bottom:32px}
+#setup input{width:100%;max-width:340px;padding:14px 16px;background:#0a1020;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:13px;margin-bottom:12px;outline:none;transition:border .2s}
+#setup input:focus{border-color:var(--accent)}
+#setup button{width:100%;max-width:340px;padding:14px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),#8b6914);color:#000;font-family:inherit;font-size:12px;font-weight:800;letter-spacing:1px;cursor:pointer}
+#setup button:disabled{opacity:.4;cursor:not-allowed}
+#setup .note{font-size:8px;color:var(--dim);margin-top:16px;max-width:300px;line-height:1.5}
+
+/* App */
+#app{display:none;padding-bottom:80px}
+
+/* Header */
+.header{padding:14px 14px 10px;background:linear-gradient(180deg,#0a1020,var(--bg));border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.pair{display:flex;align-items:center;gap:6px}
+.pair-label{color:var(--accent);font-size:10px;font-weight:800;letter-spacing:2px}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700}
+.badge-def{background:#111827;color:#94a3b8;border:1px solid #1e293b}
+.badge-y{background:#422006;color:#fbbf24;border:1px solid #78350f}
+.badge-g{background:#052e16;color:#4ade80;border:1px solid #14532d}
+.badge-r{background:#350a0a;color:#f87171;border:1px solid #7f1d1d}
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.dot-live{background:var(--green);box-shadow:0 0 6px var(--green)}
+.dot-wait{background:var(--orange)}
+.price{font-size:26px;font-weight:800;color:#fff;margin-top:4px;letter-spacing:-0.5px}
+.change{font-size:11px;margin-top:2px}
+.meta{font-size:8px;color:var(--dim)}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-top:10px}
+.tabs button{flex:1;padding:6px 4px;border-radius:6px;border:none;cursor:pointer;background:transparent;color:var(--dim);font-size:9px;font-weight:700;letter-spacing:1px;font-family:inherit;border-bottom:2px solid transparent;transition:all .2s}
+.tabs button.active{background:rgba(201,168,76,.13);color:var(--accent);border-bottom-color:var(--accent)}
+
+/* Content */
+.content{padding:10px 12px}
+
+/* Cards */
+.card{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:14px;margin-bottom:10px}
+.card-label{font-size:9px;color:var(--dim);letter-spacing:1.5px;font-weight:700;text-transform:uppercase;margin-bottom:6px}
+
+/* Chart */
+.chart-wrap{position:relative;height:70px;background:#080d15;border-radius:6px;overflow:hidden;border:1px solid var(--border);margin-bottom:8px}
+.chart-label{font-size:9px;color:var(--dim);letter-spacing:1.5px;font-weight:600;margin-bottom:4px}
+.chart-hi,.chart-lo{position:absolute;font-size:8px;color:var(--dim);left:6px}
+.chart-hi{top:4px}.chart-lo{bottom:4px}
+
+/* Grid helpers */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.cell{padding:8px;background:#080d15;border-radius:6px}
+.cell-label{font-size:8px;color:var(--dim)}
+.cell-val{font-size:14px;font-weight:700}
+.cell-val-lg{font-size:16px;font-weight:800}
+.cell-sub{font-size:8px;color:var(--dim)}
+.text-center{text-align:center}
+
+/* Progress bar */
+.pbar{height:6px;background:#111827;border-radius:3px;overflow:hidden;margin:3px 0}
+.pbar-fill{height:100%;border-radius:3px;transition:width .5s}
+.pbar-labels{display:flex;justify-content:space-between;font-size:7px;color:var(--dim)}
+
+/* Zone row */
+.zone-row{display:flex;justify-content:space-between;padding:4px 8px;border-radius:4px;margin-bottom:3px}
+
+/* News item */
+.news-item{border-left:3px solid var(--orange);padding:10px;margin-bottom:8px;border-radius:0 12px 12px 0}
+.news-item.pos{border-left-color:var(--green)}
+.news-item.neg{border-left-color:var(--red)}
+
+/* Buttons */
+.btn-ai{width:100%;padding:14px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--accent),#8b6914);color:#000;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:1px;margin-bottom:12px}
+.btn-ai:disabled{background:var(--border);color:var(--dim);cursor:not-allowed}
+
+/* Bias */
+.bias-card{display:flex;justify-content:space-between;align-items:center}
+.bias-title{font-size:22px;font-weight:800}
+.bias-sub{font-size:10px;color:var(--dim)}
+
+/* Trade card */
+.trade-card{border-left:3px solid var(--green)}
+.trade-card.sell{border-left-color:var(--red)}
+.trade-dir{font-size:18px;font-weight:800;margin-bottom:8px}
+
+/* Level row */
+.level-row{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;margin-bottom:3px;border-radius:4px}
+
+/* Catalyst */
+.catalyst{font-size:10px;color:var(--text);padding:4px 0;border-bottom:1px solid var(--border)}
+
+/* Disclaimer */
+.disclaimer{padding:12px 16px;text-align:center;font-size:8px;color:var(--dim);line-height:1.4}
+
+/* Empty state */
+.empty{text-align:center;padding:40px 20px;color:var(--dim)}
+.empty-icon{font-size:32px;margin-bottom:12px}
+
+/* Animations */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.loading-pulse{animation:pulse 1.5s ease-in-out infinite}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .3s ease-out}
+</style>
+</head>
+<body>
+
+<!-- ═══ SETUP SCREEN ═══ -->
+<div id="setup">
+  <div style="font-size:36px;margin-bottom:16px">🎯</div>
+  <h1>XAU/USD SWING HEAVY</h1>
+  <div class="sub">300 — 1000 PIP HUNTER</div>
+  <input id="tdKey" type="text" placeholder="TwelveData API Key" autocomplete="off" spellcheck="false">
+  <button id="startBtn" onclick="initApp()">INICIAR DASHBOARD</button>
+  <div class="note">
+    Tu key se guarda localmente en este navegador (localStorage). No se envía a ningún servidor externo.
+    La API de Anthropic funciona integrada sin key adicional.
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div id="app">
+  <!-- Header -->
+  <div class="header">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div class="pair">
+          <span class="pair-label">XAU/USD</span>
+          <span class="badge badge-def">SWING</span>
+          <span class="badge badge-y">300-1000P</span>
+          <span class="dot" id="statusDot"></span>
+          <span id="statusTxt" style="font-size:7px"></span>
+        </div>
+        <div class="price" id="priceMain">Loading...</div>
+        <div class="change" id="changeInfo"></div>
+      </div>
+      <div style="text-align:right">
+        <div class="meta">XM 500:1</div>
+        <div class="meta" id="lastUp"></div>
+      </div>
+    </div>
+    <div class="tabs" id="tabBar">
+      <button class="active" data-tab="overview">OVERVIEW</button>
+      <button data-tab="technicals">TÉCNICO</button>
+      <button data-tab="ai">AI PLAN</button>
+      <button data-tab="news">NEWS</button>
+    </div>
+  </div>
+
+  <div class="content" id="content"></div>
+  <div class="disclaimer">⚠️ No es asesoría financiera. Trading conlleva riesgo de pérdida. Los análisis IA son orientativos.</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+const S = {
+  tdKey: '', gold: null, quote: null, status: 'connecting',
+  c4h: [], cD: [], cW: [],
+  corr: { btc: null, oil: null },
+  tab: 'overview',
+  aiPlan: null, aiLoading: false, aiError: null, aiStep: '',
+  news: [], lastUp: null,
+};
+
+// TD queue
+let Q = [], busy = false;
+function enq(u, cb) { Q.push({ u, cb }); }
+function proc() {
+  if (busy || !Q.length) return;
+  busy = true; const { u, cb } = Q.shift();
+  fetch(u).then(r => r.json()).then(d => cb(d)).catch(() => cb(null))
+    .finally(() => { setTimeout(() => { busy = false; }, 8500); });
+}
+setInterval(proc, 1200);
+
+const TD = ep => `https://api.twelvedata.com/${ep}&apikey=${S.tdKey}`;
+const fC = n => n ? `$${n.toFixed(2)}` : '—';
+const toPips = (a, b) => Math.abs(a - b) * 10;
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+function initApp() {
+  const key = document.getElementById('tdKey').value.trim();
+  if (!key) return;
+  S.tdKey = key;
+  localStorage.setItem('td_key', key);
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  setupTabs();
+  loadAll();
+  setInterval(refreshPrice, 30000);
+  setInterval(loadCandles, 600000);
+}
+
+// Auto-start if key saved
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('td_key');
+  if (saved) { document.getElementById('tdKey').value = saved; }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════════
+function setupTabs() {
+  document.querySelectorAll('#tabBar button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      S.tab = btn.dataset.tab;
+      document.querySelectorAll('#tabBar button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TECHNICALS
+// ═══════════════════════════════════════════════════════════════
+function calcRSI(candles, period = 14) {
+  if (candles.length < period + 1) return null;
+  let gains = 0, losses = 0;
+  for (let i = candles.length - period; i < candles.length; i++) {
+    const d = candles[i].c - candles[i - 1].c;
+    if (d > 0) gains += d; else losses -= d;
+  }
+  const ag = gains / period, al = losses / period;
+  return al === 0 ? 100 : 100 - 100 / (1 + ag / al);
+}
+
+function calcEMA(data, period) {
+  const k = 2 / (period + 1); let ema = data[0];
+  for (let i = 1; i < data.length; i++) ema = data[i] * k + ema * (1 - k);
+  return ema;
+}
+
+function calcMACD(candles) {
+  if (candles.length < 26) return null;
+  const c = candles.map(x => x.c);
+  const e12 = calcEMA(c, 12), e26 = calcEMA(c, 26), macd = e12 - e26;
+  const signal = calcEMA(c.slice(-9), 9) - calcEMA(c.slice(-26), 26);
+  return { macd, signal, hist: macd - signal * 0.7 };
+}
+
+function calcATR(candles, period = 14) {
+  if (candles.length < period + 1) return null;
+  let sum = 0;
+  for (let i = candles.length - period; i < candles.length; i++) {
+    const tr = Math.max(candles[i].h - candles[i].l, Math.abs(candles[i].h - candles[i - 1].c), Math.abs(candles[i].l - candles[i - 1].c));
+    sum += tr;
+  }
+  return sum / period;
+}
+
+function calcBollinger(candles, period = 20) {
+  if (candles.length < period) return null;
+  const sl = candles.slice(-period).map(c => c.c);
+  const mean = sl.reduce((a, b) => a + b, 0) / period;
+  const std = Math.sqrt(sl.reduce((a, b) => a + (b - mean) ** 2, 0) / period);
+  return { upper: mean + 2 * std, middle: mean, lower: mean - 2 * std, width: (4 * std / mean) * 100 };
+}
+
+function calcStoch(candles, period = 14) {
+  if (candles.length < period) return null;
+  const sl = candles.slice(-period);
+  const hi = Math.max(...sl.map(c => c.h)), lo = Math.min(...sl.map(c => c.l));
+  return hi === lo ? 50 : ((sl[sl.length - 1].c - lo) / (hi - lo)) * 100;
+}
+
+function calcSR(candles) {
+  if (candles.length < 10) return { S: [], R: [] };
+  const mn = Math.min(...candles.map(c => c.l)), mx = Math.max(...candles.map(c => c.h)), rn = mx - mn;
+  return { S: [mn + rn * 0.05, mn + rn * 0.236, mn + rn * 0.382], R: [mn + rn * 0.618, mn + rn * 0.786, mn + rn * 0.95] };
+}
+
+function findSwingZones(candles) {
+  if (candles.length < 20) return { demand: [], supply: [] };
+  const demand = [], supply = [];
+  for (let i = 2; i < candles.length - 2; i++) {
+    const c = candles[i];
+    if (c.l < candles[i-1].l && c.l < candles[i-2].l && c.l < candles[i+1].l && c.l < candles[i+2].l)
+      demand.push({ price: c.l, strength: candles[i+1].c > c.h ? 2 : 1 });
+    if (c.h > candles[i-1].h && c.h > candles[i-2].h && c.h > candles[i+1].h && c.h > candles[i+2].h)
+      supply.push({ price: c.h, strength: candles[i+1].c < c.l ? 2 : 1 });
+  }
+  return { demand: demand.slice(-3), supply: supply.slice(-3) };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DATA LOADING
+// ═══════════════════════════════════════════════════════════════
+const parseCandles = d => d.values ? d.values.reverse().map(v => ({ t: new Date(v.datetime).getTime(), o: +v.open, h: +v.high, l: +v.low, c: +v.close })) : [];
+
+async function loadCandles() {
+  try {
+    const [r4, rD, rW] = await Promise.all([
+      fetch(TD('time_series?symbol=XAU/USD&interval=4h&outputsize=80')),
+      fetch(TD('time_series?symbol=XAU/USD&interval=1day&outputsize=120')),
+      fetch(TD('time_series?symbol=XAU/USD&interval=1week&outputsize=52')),
+    ]);
+    const [d4, dD, dW] = await Promise.all([r4.json(), rD.json(), rW.json()]);
+    S.c4h = parseCandles(d4); S.cD = parseCandles(dD); S.cW = parseCandles(dW);
+    S.status = 'live';
+  } catch { S.status = 'error'; }
+  render();
+}
+
+async function loadQuote() {
+  try {
+    const r = await fetch(TD('quote?symbol=XAU/USD'));
+    const d = await r.json();
+    if (d.close) {
+      S.gold = +d.close;
+      S.quote = { open: +d.open, high: +d.high, low: +d.low, close: +d.close, prev: +d.previous_close, ch: +d.change, chp: +d.percent_change };
+      S.status = 'live'; S.lastUp = new Date();
+    }
+  } catch {}
+  render();
+}
+
+function refreshPrice() {
+  enq(TD('price?symbol=XAU/USD'), d => {
+    if (d?.price) { S.gold = +d.price; S.status = 'live'; S.lastUp = new Date(); render(); }
+  });
+  setTimeout(() => {
+    enq(TD('price?symbol=BTC/USD,XBR/USD'), d => {
+      if (d) {
+        if (d['BTC/USD']?.price) S.corr.btc = +d['BTC/USD'].price;
+        if (d['XBR/USD']?.price) S.corr.oil = +d['XBR/USD'].price;
+        render();
+      }
+    });
+  }, 10000);
+}
+
+async function loadAll() { await loadCandles(); await loadQuote(); refreshPrice(); render(); }
+
+// ═══════════════════════════════════════════════════════════════
+// AI ANALYSIS
+// ═══════════════════════════════════════════════════════════════
+async function callAnthropic(prompt, maxTokens = 1000, useSearch = false) {
+  const body = {
+    model: 'claude-sonnet-4-20250514', max_tokens: maxTokens,
+    messages: [{ role: 'user', content: prompt }],
+  };
+  if (useSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const d = await r.json();
+  if (d.error) throw new Error(d.error.message);
+  return d.content?.filter(b => b.type === 'text').map(b => b.text).join('') || '';
+}
+
+async function runAI() {
+  if (!S.gold || S.cD.length < 20) return;
+  S.aiLoading = true; S.aiError = null; S.aiPlan = null; S.news = []; render();
+
+  try {
+    const rsi4h = calcRSI(S.c4h), rsiD = calcRSI(S.cD), rsiW = calcRSI(S.cW);
+    const macd4h = calcMACD(S.c4h), macdD = calcMACD(S.cD);
+    const atr4h = calcATR(S.c4h), atrD = calcATR(S.cD), atrW = calcATR(S.cW);
+    const bbD = calcBollinger(S.cD), stochD = calcStoch(S.cD);
+    const srD = calcSR(S.cD), srW = calcSR(S.cW);
+    const zones = findSwingZones(S.cD);
+
+    const tech = `PRICE: $${S.gold.toFixed(2)}
+4H: RSI=${rsi4h?.toFixed(1)}, MACD=${macd4h?.macd?.toFixed(2)}(h=${macd4h?.hist?.toFixed(2)}), ATR=${atr4h?.toFixed(2)}(${(atr4h*10)?.toFixed(0)}p)
+DAILY: RSI=${rsiD?.toFixed(1)}, MACD=${macdD?.macd?.toFixed(2)}(h=${macdD?.hist?.toFixed(2)}), ATR=${atrD?.toFixed(2)}(${(atrD*10)?.toFixed(0)}p), Stoch=${stochD?.toFixed(1)}
+WEEKLY: RSI=${rsiW?.toFixed(1)}, ATR=${atrW?.toFixed(2)}(${(atrW*10)?.toFixed(0)}p)
+BB Daily: U=$${bbD?.upper?.toFixed(2)} M=$${bbD?.middle?.toFixed(2)} L=$${bbD?.lower?.toFixed(2)} W=${bbD?.width?.toFixed(2)}%
+Fib Daily: S=${srD.S.map(s=>s.toFixed(2))} R=${srD.R.map(r=>r.toFixed(2))}
+Fib Weekly: S=${srW.S.map(s=>s.toFixed(2))} R=${srW.R.map(r=>r.toFixed(2))}
+Demand: ${zones.demand.map(z=>'$'+z.price.toFixed(2)+'(s:'+z.strength+')').join(',')||'none'}
+Supply: ${zones.supply.map(z=>'$'+z.price.toFixed(2)+'(s:'+z.strength+')').join(',')||'none'}
+Daily range(5): ${S.cD.slice(-5).map(c=>((c.h-c.l)*10).toFixed(0)+'p').join(',')}
+Weekly range(4): ${S.cW.slice(-4).map(c=>((c.h-c.l)*10).toFixed(0)+'p').join(',')}`;
+
+    // Step 1: News
+    S.aiStep = 'Escaneando noticias macro y geopolíticas...'; render();
+    const newsTxt = await callAnthropic(
+      `Search for the latest news affecting gold XAU/USD prices RIGHT NOW. Focus on: Fed decisions, CPI/PPI, NFP, USD/DXY, bond yields, central bank gold purchases, geopolitical conflicts, wars, sanctions, tariffs, oil. Return ONLY valid JSON array (no markdown, no backticks): [{"title":"string","impact":"positive"|"negative"|"neutral","summary":"1 sentence max","weight":"high"|"medium"|"low"}]. Max 10 items. Sort by weight.`, 1000, true);
+    try { const p = JSON.parse(newsTxt.replace(/```json|```/g, '').trim()); if (Array.isArray(p)) S.news = p; } catch {}
+
+    const newsCtx = S.news.length ? '\nNEWS:\n' + S.news.map(n => `[${n.impact}][${n.weight}] ${n.title}: ${n.summary}`).join('\n') : '';
+
+    // Step 2: Plan
+    S.aiStep = 'Generando plan swing 300-1000 pips...'; render();
+    const planTxt = await callAnthropic(
+      `Eres un analista de swing trading de oro XAU/USD enfocado EXCLUSIVAMENTE en movimientos de 300 a 1000 pips. NO scalping, NO intradía.
+
+${tech}
+${newsCtx}
+
+Responde SOLO JSON válido (sin markdown, sin backticks):
+{"bias":"BULLISH"|"BEARISH"|"NEUTRAL","bias_strength":1-10,"confidence":1-100,"horizon":"ej: 3-7 días","primary_trade":{"direction":"BUY"|"SELL","entry_zone":{"from":0,"to":0},"stop_loss":0,"tp1":0,"tp1_pips":0,"tp2":0,"tp2_pips":0,"tp3":0,"tp3_pips":0,"risk_reward":"string","rationale":"2 sentences max"},"alternative_trade":{"direction":"BUY"|"SELL","entry_zone":{"from":0,"to":0},"stop_loss":0,"tp1":0,"tp1_pips":0,"rationale":"1 sentence"},"invalidation":"string","key_levels":[{"price":0,"label":"string","type":"support"|"resistance"|"pivot"}],"upcoming_catalysts":["string"],"weekly_outlook":"2-3 sentences","lot_suggestion_001":{"risk_usd":0,"sl_pips":0,"lot_size":0}}
+
+REGLAS:
+- TP mínimo 300 pips ($30), máximo ~1000 pips ($100)
+- SL proporcional pero tight (buen R:R)
+- Confluencia multi-TF (4H+Daily+Weekly)
+- Zonas de demanda/oferta institucionales
+- ATR diario/semanal para validar targets
+- lot_suggestion_001 = para 0.01 lots, riesgo USD basado en SL
+- Cuenta XM 500:1`, 1000, true);
+
+    try {
+      S.aiPlan = JSON.parse(planTxt.replace(/```json|```/g, '').trim());
+    } catch { S.aiError = 'Error parseando respuesta IA. Intenta de nuevo.'; }
+  } catch (e) { S.aiError = 'Error: ' + e.message; }
+
+  S.aiLoading = false; S.aiStep = ''; render();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
+function render() {
+  // Header
+  const dot = document.getElementById('statusDot');
+  const stxt = document.getElementById('statusTxt');
+  if (dot) { dot.className = 'dot ' + (S.status === 'live' ? 'dot-live' : 'dot-wait'); }
+  if (stxt) { stxt.textContent = S.status === 'live' ? 'LIVE' : '...'; stxt.style.color = S.status === 'live' ? 'var(--green)' : 'var(--orange)'; }
+
+  const pm = document.getElementById('priceMain');
+  if (pm) pm.textContent = S.gold ? fC(S.gold) : 'Loading...';
+
+  const ci = document.getElementById('changeInfo');
+  if (ci && S.quote) {
+    const up = S.quote.ch >= 0;
+    ci.innerHTML = `<span style="color:var(--${up?'green':'red'})">${up?'▲':'▼'} ${S.quote.ch?.toFixed(2)} (${S.quote.chp?.toFixed(2)}%)</span> <span style="color:var(--dim);font-size:9px;margin-left:8px">H ${fC(S.quote.high)} · L ${fC(S.quote.low)}</span>`;
+  }
+
+  const lu = document.getElementById('lastUp');
+  if (lu && S.lastUp) lu.textContent = S.lastUp.toLocaleTimeString();
+
+  // Content
+  const el = document.getElementById('content');
+  if (!el) return;
+
+  if (S.tab === 'overview') el.innerHTML = renderOverview();
+  else if (S.tab === 'technicals') el.innerHTML = renderTechnicals();
+  else if (S.tab === 'ai') el.innerHTML = renderAI();
+  else if (S.tab === 'news') el.innerHTML = renderNews();
+}
+
+// ═══ SVG CHART ═══
+function svgChart(data, h, id) {
+  if (!data || data.length < 5) return '';
+  const prices = data.map(c => c.c);
+  const mn = Math.min(...prices), mx = Math.max(...prices), rng = mx - mn || 1;
+  const isUp = prices[prices.length - 1] >= prices[0];
+  const col = isUp ? 'var(--green)' : 'var(--red)';
+  const pts = prices.map((p, i) => `${i},${h - ((p - mn) / rng) * (h - 8) - 4}`);
+  const line = pts.map((p, i) => (i === 0 ? 'M' : 'L') + p).join(' ');
+  const area = line + `L${prices.length - 1},${h}L0,${h}Z`;
+  return `<svg width="100%" height="${h}" viewBox="0 0 ${prices.length} ${h}" preserveAspectRatio="none">
+    <defs><linearGradient id="g${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${col}" stop-opacity=".3"/><stop offset="100%" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${area}" fill="url(#g${id})"/><path d="${line}" fill="none" stroke="${col}" stroke-width="1.5"/>
+  </svg>`;
+}
+
+function chartBlock(data, h, label, id) {
+  if (!data || data.length < 5) return '';
+  const prices = data.map(c => c.c);
+  const mn = Math.min(...prices), mx = Math.max(...prices);
+  return `<div class="chart-label">${label}</div>
+  <div class="chart-wrap" style="height:${h}px">${svgChart(data, h, id)}
+    <div class="chart-hi">${fC(mx)}</div><div class="chart-lo">${fC(mn)}</div>
+  </div>`;
+}
+
+// ═══ OVERVIEW ═══
+function renderOverview() {
+  const atrD = calcATR(S.cD), atrW = calcATR(S.cW);
+  return `<div class="fade-in">
+  ${chartBlock(S.c4h.slice(-40), 70, '4H CHART', '4h')}
+  ${chartBlock(S.cD.slice(-60), 70, 'DAILY CHART', 'd')}
+  ${chartBlock(S.cW.slice(-30), 60, 'WEEKLY CHART', 'w')}
+
+  <div class="card">
+    <div class="card-label">VOLATILIDAD / ATR</div>
+    <div class="grid3">
+      <div><div class="cell-label">ATR Daily</div><div class="cell-val-lg" style="color:var(--orange)">${atrD ? (atrD*10).toFixed(0)+'p' : '—'}</div><div class="cell-sub">${atrD?fC(atrD):''}</div></div>
+      <div><div class="cell-label">ATR Weekly</div><div class="cell-val-lg" style="color:var(--purple)">${atrW ? (atrW*10).toFixed(0)+'p' : '—'}</div><div class="cell-sub">${atrW?fC(atrW):''}</div></div>
+      <div><div class="cell-label">Rango Hoy</div><div class="cell-val-lg" style="color:var(--blue)">${S.quote ? ((S.quote.high-S.quote.low)*10).toFixed(0)+'p' : '—'}</div></div>
+    </div>
+    ${atrW ? `<div style="margin-top:8px;font-size:9px;color:var(--dim);font-style:italic">ATR semanal = ${(atrW*10).toFixed(0)} pips → target ${Math.round(atrW*10*0.6)}-${Math.round(atrW*10*1.5)} pips realista</div>` : ''}
+  </div>
+
+  <div class="card">
+    <div class="card-label">CORRELACIONES</div>
+    <div class="grid2">
+      <div class="cell"><div class="cell-label">BTC/USD</div><div class="cell-val">${S.corr.btc ? '$'+S.corr.btc.toFixed(0) : '—'}</div></div>
+      <div class="cell"><div class="cell-label">BRENT OIL</div><div class="cell-val">${S.corr.oil ? '$'+S.corr.oil.toFixed(2) : '—'}</div></div>
+    </div>
+  </div>
+
+  <button class="btn-ai" onclick="runAI()" ${S.aiLoading?'disabled':''}>${S.aiLoading ? '⏳ '+S.aiStep : '⚡ GENERAR PLAN SWING 300-1000 PIPS'}</button>
+  </div>`;
+}
+
+// ═══ TECHNICALS ═══
+function renderTechnicals() {
+  const rsi4h = calcRSI(S.c4h), rsiD = calcRSI(S.cD), rsiW = calcRSI(S.cW);
+  const macdD = calcMACD(S.cD), bbD = calcBollinger(S.cD), stochD = calcStoch(S.cD);
+  const zones = findSwingZones(S.cD);
+  const srD = calcSR(S.cD), srW = calcSR(S.cW);
+
+  const rsiBar = (label, val) => {
+    const col = val > 70 ? 'var(--red)' : val < 30 ? 'var(--green)' : 'var(--blue)';
+    const txtCol = val > 70 ? 'var(--red)' : val < 30 ? 'var(--green)' : 'var(--text)';
+    return `<div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:10px;color:var(--dim)">${label}</span>
+        <span style="font-size:13px;font-weight:700;color:${txtCol}">${val?val.toFixed(1):'—'}</span>
+      </div>
+      <div class="pbar"><div class="pbar-fill" style="width:${val||0}%;background:${col}"></div></div>
+      <div class="pbar-labels"><span>Oversold 30</span><span>50</span><span>70 Overbought</span></div>
+    </div>`;
+  };
+
+  const fibBadges = (label, sr) => `<div style="margin-bottom:8px">
+    <div style="font-size:9px;color:var(--accent);font-weight:700;margin-bottom:3px">${label}</div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap">
+      ${sr.S.map((s,i)=>`<span class="badge badge-g" style="font-size:8px">S${i+1}: ${fC(s)}</span>`).join('')}
+      ${sr.R.map((r,i)=>`<span class="badge badge-r" style="font-size:8px">R${i+1}: ${fC(r)}</span>`).join('')}
+    </div></div>`;
+
+  return `<div class="fade-in">
+  <div class="card">
+    <div class="card-label">RSI MULTI-TIMEFRAME</div>
+    ${rsiBar('4H', rsi4h)}${rsiBar('Daily', rsiD)}${rsiBar('Weekly', rsiW)}
+  </div>
+
+  <div class="card">
+    <div class="card-label">MACD DAILY</div>
+    ${macdD ? `<div class="grid3 text-center">
+      <div><div class="cell-label">MACD</div><div class="cell-val" style="color:var(--${macdD.macd>0?'green':'red'})">${macdD.macd.toFixed(2)}</div></div>
+      <div><div class="cell-label">Signal</div><div class="cell-val">${macdD.signal.toFixed(2)}</div></div>
+      <div><div class="cell-label">Histogram</div><div class="cell-val" style="color:var(--${macdD.hist>0?'green':'red'})">${macdD.hist.toFixed(2)}</div></div>
+    </div>` : '<div style="color:var(--dim)">Datos insuficientes</div>'}
+  </div>
+
+  <div class="card">
+    <div class="card-label">BOLLINGER BANDS (DAILY)</div>
+    ${bbD ? `<div class="grid3 text-center">
+      <div><div class="cell-label">Upper</div><div class="cell-val" style="color:var(--red)">${fC(bbD.upper)}</div></div>
+      <div><div class="cell-label">Middle</div><div class="cell-val">${fC(bbD.middle)}</div></div>
+      <div><div class="cell-label">Lower</div><div class="cell-val" style="color:var(--green)">${fC(bbD.lower)}</div></div>
+    </div>
+    <div style="margin-top:6px;font-size:10px;color:var(--dim)">BB Width: <span style="color:${bbD.width>3?'var(--orange)':'var(--text)'}">${bbD.width.toFixed(2)}%</span>${bbD.width>4?' (alta volatilidad)':bbD.width<2?' (squeeze — explosión inminente)':''}</div>` : ''}
+  </div>
+
+  <div class="card">
+    <div class="card-label">STOCHASTIC (DAILY)</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="font-size:22px;font-weight:800;color:var(--${stochD>80?'red':stochD<20?'green':'text'})">${stochD?stochD.toFixed(1):'—'}</div>
+      <div style="font-size:10px;color:var(--dim)">${stochD>80?'⚠️ Sobrecomprado':stochD<20?'✅ Sobrevendido':'Zona neutral'}</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">ZONAS INSTITUCIONALES (DAILY)</div>
+    <div style="margin-bottom:8px">
+      <div style="font-size:9px;color:var(--green);font-weight:700;margin-bottom:4px">▼ DEMAND ZONES</div>
+      ${zones.demand.length ? zones.demand.map(z => `<div class="zone-row" style="background:#052e1622"><span style="color:var(--green);font-weight:700">${fC(z.price)}</span><span style="font-size:9px;color:var(--dim)">${S.gold?toPips(S.gold,z.price).toFixed(0)+'p away':''} · str:${z.strength}</span></div>`).join('') : '<div style="font-size:10px;color:var(--dim)">No detectadas</div>'}
+    </div>
+    <div>
+      <div style="font-size:9px;color:var(--red);font-weight:700;margin-bottom:4px">▲ SUPPLY ZONES</div>
+      ${zones.supply.length ? zones.supply.map(z => `<div class="zone-row" style="background:#350a0a22"><span style="color:var(--red);font-weight:700">${fC(z.price)}</span><span style="font-size:9px;color:var(--dim)">${S.gold?toPips(S.gold,z.price).toFixed(0)+'p away':''} · str:${z.strength}</span></div>`).join('') : '<div style="font-size:10px;color:var(--dim)">No detectadas</div>'}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">FIBONACCI S/R</div>
+    ${fibBadges('Daily', srD)}${fibBadges('Weekly', srW)}
+  </div>
+  </div>`;
+}
+
+// ═══ AI PLAN ═══
+function renderAI() {
+  const p = S.aiPlan;
+  const biasCol = b => b === 'BULLISH' ? 'var(--green)' : b === 'BEARISH' ? 'var(--red)' : 'var(--orange)';
+
+  let html = `<div class="fade-in">
+    <button class="btn-ai" onclick="runAI()" ${S.aiLoading?'disabled':''}>${S.aiLoading ? '⏳ '+S.aiStep : '⚡ GENERAR PLAN SWING'}</button>`;
+
+  if (S.aiError) html += `<div class="card" style="border-color:rgba(239,68,68,.3);background:#1a0a0a"><div style="color:var(--red);font-size:11px">${S.aiError}</div></div>`;
+
+  if (p) {
+    // Bias
+    html += `<div class="card" style="border-color:${biasCol(p.bias)}33">
+      <div class="bias-card"><div><div class="bias-title" style="color:${biasCol(p.bias)}">${p.bias}</div><div class="bias-sub">Fuerza: ${p.bias_strength}/10 · Confianza: ${p.confidence}%</div></div>
+      <div style="text-align:right"><div style="font-size:10px;color:var(--dim)">Horizonte</div><div style="font-size:13px;font-weight:700;color:var(--accent)">${p.horizon}</div></div></div></div>`;
+
+    // Primary trade
+    if (p.primary_trade) {
+      const t = p.primary_trade, isBuy = t.direction === 'BUY';
+      const tc = isBuy ? 'var(--green)' : 'var(--red)';
+      html += `<div class="card trade-card${isBuy?'':' sell'}" style="border-color:${tc}44;background:${isBuy?'#052e1611':'#350a0a11'}">
+        <div class="card-label" style="color:var(--accent)">TRADE PRINCIPAL</div>
+        <div class="trade-dir" style="color:${tc}">${isBuy?'🟢':'🔴'} ${t.direction}</div>
+        <div class="grid2" style="margin-bottom:10px">
+          <div class="cell"><div class="cell-label">ENTRY ZONE</div><div style="font-size:12px;font-weight:700">${fC(t.entry_zone?.from)} - ${fC(t.entry_zone?.to)}</div></div>
+          <div class="cell"><div class="cell-label" style="color:var(--red)">STOP LOSS</div><div style="font-size:12px;font-weight:700;color:var(--red)">${fC(t.stop_loss)}</div></div>
+        </div>
+        <div class="grid3" style="margin-bottom:10px">
+          ${['tp1','tp2','tp3'].map((tp,i) => `<div class="cell text-center"><div class="cell-label" style="color:var(--green)">TP${i+1}</div><div style="font-size:12px;font-weight:700;color:var(--green)">${fC(t[tp])}</div><div style="font-size:9px;color:var(--accent)">${t[tp+'_pips']?t[tp+'_pips']+'p':''}</div></div>`).join('')}
+        </div>
+        <div style="font-size:10px;color:var(--dim);margin-bottom:6px">R:R → <span style="color:var(--accent);font-weight:700">${t.risk_reward}</span></div>
+        <div style="font-size:10px;color:var(--text);line-height:1.4">${t.rationale}</div>
+      </div>`;
+    }
+
+    // Alt trade
+    if (p.alternative_trade) {
+      const a = p.alternative_trade, isBuy = a.direction === 'BUY';
+      html += `<div class="card" style="opacity:.8">
+        <div class="card-label" style="color:var(--dim)">TRADE ALTERNATIVO</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:14px;font-weight:700;color:var(--${isBuy?'green':'red'})">${a.direction}</span>
+          <span style="font-size:10px;color:var(--dim)">Entry: ${fC(a.entry_zone?.from)}-${fC(a.entry_zone?.to)}</span>
+        </div>
+        <div style="font-size:10px;color:var(--dim)">SL: ${fC(a.stop_loss)} · TP1: ${fC(a.tp1)} ${a.tp1_pips?'('+a.tp1_pips+'p)':''}</div>
+        <div style="font-size:10px;color:var(--text);margin-top:4px">${a.rationale}</div>
+      </div>`;
+    }
+
+    // Lot suggestion
+    if (p.lot_suggestion_001) {
+      const l = p.lot_suggestion_001;
+      html += `<div class="card"><div class="card-label">LOT SIZE (0.01 BASE)</div>
+        <div class="grid3 text-center">
+          <div><div class="cell-label">Lot Size</div><div class="cell-val-lg" style="color:var(--accent)">${l.lot_size}</div></div>
+          <div><div class="cell-label">SL Pips</div><div class="cell-val-lg" style="color:var(--red)">${l.sl_pips}</div></div>
+          <div><div class="cell-label">Riesgo USD</div><div class="cell-val-lg" style="color:var(--orange)">$${l.risk_usd}</div></div>
+        </div></div>`;
+    }
+
+    // Invalidation
+    if (p.invalidation) html += `<div class="card" style="border-color:rgba(239,68,68,.2)"><div class="card-label" style="color:var(--red)">⚠️ INVALIDACIÓN</div><div style="font-size:11px;line-height:1.4">${p.invalidation}</div></div>`;
+
+    // Key levels
+    if (p.key_levels?.length) {
+      html += `<div class="card"><div class="card-label">NIVELES CLAVE</div>`;
+      p.key_levels.forEach(lv => {
+        const bg = lv.type==='support'?'#052e1618':lv.type==='resistance'?'#350a0a18':'#42200618';
+        const bc = lv.type==='support'?'g':lv.type==='resistance'?'r':'y';
+        html += `<div class="level-row" style="background:${bg}"><span style="font-size:10px">${lv.label}</span><div style="display:flex;align-items:center;gap:6px"><span class="badge badge-${bc}" style="font-size:8px">${lv.type?.toUpperCase()}</span><span style="font-size:12px;font-weight:700">${fC(lv.price)}</span></div></div>`;
+      });
+      html += `</div>`;
+    }
+
+    // Catalysts
+    if (p.upcoming_catalysts?.length) {
+      html += `<div class="card"><div class="card-label">CATALIZADORES PRÓXIMOS</div>`;
+      p.upcoming_catalysts.forEach(c => { html += `<div class="catalyst">🔸 ${c}</div>`; });
+      html += `</div>`;
+    }
+
+    // Weekly outlook
+    if (p.weekly_outlook) html += `<div class="card"><div class="card-label">PERSPECTIVA SEMANAL</div><div style="font-size:11px;line-height:1.5">${p.weekly_outlook}</div></div>`;
+  }
+
+  if (!p && !S.aiLoading && !S.aiError) html += `<div class="empty"><div class="empty-icon">🎯</div><div style="font-size:12px">Presiona el botón para generar</div><div style="font-size:10px;margin-top:4px">tu plan de swing trading</div><div style="font-size:10px">enfocado en 300-1000 pips</div></div>`;
+
+  html += '</div>';
+  return html;
+}
+
+// ═══ NEWS ═══
+function renderNews() {
+  let html = '<div class="fade-in">';
+  if (S.news.length) {
+    const sent = S.news.reduce((a, n) => a + (n.impact === 'positive' ? 1 : n.impact === 'negative' ? -1 : 0), 0);
+    const sentLabel = sent > 0 ? 'BULLISH' : sent < 0 ? 'BEARISH' : 'NEUTRAL';
+    const sentCol = sent > 0 ? 'var(--green)' : sent < 0 ? 'var(--red)' : 'var(--orange)';
+    html += `<div class="card-label" style="margin-bottom:8px">NOTICIAS MACRO (${S.news.length}) · Sentimiento: <span style="color:${sentCol}">${sentLabel}</span></div>`;
+    S.news.forEach(n => {
+      const cls = n.impact === 'positive' ? 'pos' : n.impact === 'negative' ? 'neg' : '';
+      html += `<div class="card news-item ${cls}" style="padding:10px">
+        <div style="display:flex;justify-content:space-between;gap:8px">
+          <div style="flex:1"><div style="font-size:11px;font-weight:700;line-height:1.3;margin-bottom:4px">${n.title}</div><div style="font-size:10px;color:var(--dim);line-height:1.3">${n.summary||''}</div></div>
+          <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end"><span class="badge badge-${n.impact==='positive'?'g':n.impact==='negative'?'r':'y'}">${n.impact?.toUpperCase()}</span>${n.weight?`<span style="font-size:8px;color:var(--dim)">${n.weight}</span>`:''}</div>
+        </div></div>`;
+    });
+  } else {
+    html += `<div class="empty" style="padding:40px"><div style="font-size:10px">Genera el plan IA para cargar noticias</div></div>`;
+    html += `<button class="btn-ai" onclick="runAI()" ${S.aiLoading?'disabled':''}>${S.aiLoading ? '⏳ '+S.aiStep : '🔍 ESCANEAR NOTICIAS'}</button>`;
+  }
+  html += '</div>';
+  return html;
+}
+</script>
+</body>
+</html>
