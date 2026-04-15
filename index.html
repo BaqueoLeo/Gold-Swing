@@ -169,6 +169,64 @@ async function phNews(){
   const t=await cAI('Search for the very latest news affecting gold XAU/USD RIGHT NOW. Fed, CPI, NFP, USD/DXY, bonds, central bank gold, geopolitics, wars, tariffs, oil. Return ONLY JSON array: [{"title":"str","impact":"positive"|"negative"|"neutral","summary":"1 sentence","weight":"high"|"medium"|"low","timeframe":"immediate"|"this_week"|"ongoing"}]. Max 10.',1000,true);
   const p=JSON.parse(t.replace(/```json|```/g,'').trim());if(!Array.isArray(p)||!p.length)throw new Error('No news');S.news=p
 }
+// ═══ MEMORY SYSTEM ═══
+function savePlan(plan,price){
+  try{
+    const mem=JSON.parse(localStorage.getItem('xau_memory')||'[]');
+    // Compress plan to essential data only
+    const entry={
+      ts:new Date().toISOString(),
+      px:price,
+      bias:plan.overall_bias,
+      str:plan.bias_strength,
+      conf:plan.confidence,
+      phase:plan.market_phase,
+      act:plan.immediate_action,
+      sc:plan.scalp_plan?.active?{d:plan.scalp_plan.direction,e:plan.scalp_plan.entry_price,sl:plan.scalp_plan.stop_loss,t1:plan.scalp_plan.tp1,t2:plan.scalp_plan.tp2}:null,
+      sw:plan.swing_plan?.active?{d:plan.swing_plan.direction,ez:plan.swing_plan.entry_zone,sl:plan.swing_plan.stop_loss,t1:plan.swing_plan.tp1,t2:plan.swing_plan.tp2,t3:plan.swing_plan.tp3}:null,
+      kl:plan.key_levels?.slice(0,5).map(l=>({p:l.price,t:l.type,i:l.importance})),
+      inv:plan.invalidation?.slice(0,80)
+    };
+    mem.push(entry);
+    // Keep max 20 plans (rolling window)
+    while(mem.length>20)mem.shift();
+    localStorage.setItem('xau_memory',JSON.stringify(mem));
+  }catch(e){console.error('Memory save error:',e)}
+}
+function loadMemory(){
+  try{return JSON.parse(localStorage.getItem('xau_memory')||'[]')}catch{return[]}
+}
+function buildMemoryContext(){
+  const mem=loadMemory();
+  if(!mem.length)return'\n=MEMORIA= Sin planes previos (primera ejecución).';
+  const recent=mem.slice(-5); // Last 5 plans
+  let ctx=`\n=MEMORIA DE PLANES PREVIOS (${mem.length} total, últimos ${recent.length})=\n`;
+  ctx+='Usa esta memoria para: 1) No repetir errores 2) Detectar si tus predicciones previas fueron correctas 3) Ajustar confianza basado en historial 4) Notar cambios de tendencia\n';
+  recent.forEach((m,i)=>{
+    const age=Math.round((Date.now()-new Date(m.ts).getTime())/60000);
+    const ageStr=age<60?age+'min':age<1440?Math.round(age/60)+'h':Math.round(age/1440)+'d';
+    ctx+=`[${ageStr} ago] Px:$${m.px?.toFixed(2)} Bias:${m.bias}(${m.str}/10,${m.conf}%) Phase:${m.phase} Act:${m.act}`;
+    if(m.sc)ctx+=` | Scalp:${m.sc.d}@${m.sc.e?.toFixed(2)} SL:${m.sc.sl?.toFixed(2)} TP1:${m.sc.t1?.toFixed(2)}`;
+    if(m.sw)ctx+=` | Swing:${m.sw.d}@${m.sw.ez?.from?.toFixed(2)}-${m.sw.ez?.to?.toFixed(2)} SL:${m.sw.sl?.toFixed(2)} TP1:${m.sw.t1?.toFixed(2)}`;
+    ctx+='\n';
+  });
+  // Price movement analysis
+  if(recent.length>=2){
+    const first=recent[0],last=recent[recent.length-1];
+    if(first.px&&last.px){
+      const move=((S.gold-first.px)*10).toFixed(0);
+      ctx+=`Movimiento desde primer plan: ${move}p (${S.gold>first.px?'SUBIÓ':'BAJÓ'})\n`;
+      // Check if previous bias was correct
+      const prevBias=last.bias;
+      const wasCorrect=(prevBias==='BULLISH'&&S.gold>last.px)||(prevBias==='BEARISH'&&S.gold<last.px);
+      ctx+=`Último bias ${prevBias} fue ${wasCorrect?'CORRECTO ✓':'INCORRECTO ✗'} (precio era $${last.px?.toFixed(2)}, ahora $${S.gold?.toFixed(2)})\n`;
+    }
+  }
+  return ctx;
+}
+function getMemoryCount(){return loadMemory().length}
+function clearMemory(){localStorage.removeItem('xau_memory')}
+
 async function phPlan(){
   if(!S.gold||S.cD.length<20)throw new Error('No data');
   const t=`PRECIO: $${S.gold.toFixed(2)} | ${new Date().toISOString()}
@@ -191,11 +249,13 @@ D Supply: ${SZ(S.cD).s.map(z=>'$'+z.p.toFixed(2)).join(',')||'none'}
 D range5: ${S.cD.slice(-5).map(c=>((c.h-c.l)*10).toFixed(0)+'p').join(',')}
 W range4: ${S.cW.slice(-4).map(c=>((c.h-c.l)*10).toFixed(0)+'p').join(',')}`;
   const nc=S.news.length?'\n=NEWS=\n'+S.news.map(n=>`[${n.impact}][${n.weight}] ${n.title}: ${n.summary}`).join('\n'):'';
+  const memCtx=buildMemoryContext();
   const txt=await cAI(`Eres analista XAU/USD. Plan ACCIONABLE para AHORA MISMO. Sistema dual scalp+swing.
-${t}${nc}
+${t}${nc}${memCtx}
 SOLO JSON (sin markdown):
 {"timestamp":"ISO","market_phase":"trending_up"|"trending_down"|"ranging"|"volatile"|"breakout","overall_bias":"BULLISH"|"BEARISH"|"NEUTRAL","bias_strength":1-10,"confidence":1-100,
 "immediate_action":"WAIT"|"BUY_NOW"|"SELL_NOW"|"SCALP_BUY"|"SCALP_SELL","immediate_reason":"que hacer AHORA",
+"memory_reflection":"1 sentence: qué aprendiste de planes previos y cómo ajustas este plan",
 "scalp_plan":{"active":true/false,"direction":"BUY"|"SELL","entry_price":0,"entry_type":"market"|"limit"|"wait_for_level","wait_for":"desc","stop_loss":0,"sl_pips":0,"tp1":0,"tp1_pips":0,"tp2":0,"tp2_pips":0,"risk_reward":"str","timeframe":"5M-1H","hold_time":"str","trigger":"señal de entrada","volume_context":"desc","rationale":"2 sent max"},
 "swing_plan":{"active":true/false,"direction":"BUY"|"SELL","entry_zone":{"from":0,"to":0},"entry_type":"limit_at_zone"|"market"|"wait_for_pullback","stop_loss":0,"sl_pips":0,"tp1":0,"tp1_pips":0,"tp2":0,"tp2_pips":0,"tp3":0,"tp3_pips":0,"risk_reward":"str","horizon":"str","rationale":"2 sent max"},
 "scaling_plan":{"use_scaling":true/false,"description":"str","scale_entries":[{"price":0,"lot_pct":0,"reason":"str"}]},
@@ -203,8 +263,12 @@ SOLO JSON (sin markdown):
 "invalidation":"str","upcoming_catalysts":["str"],
 "risk_management":{"capital":100,"scalp_lot":0,"scalp_risk_usd":0,"swing_lot":0,"swing_risk_usd":0,"max_daily_loss_usd":0},
 "next_review":"str"}
-REGLAS: Capital=$100 USD. SCALP lots=0.02-0.04 (más riesgo=0.02, menos=0.04), targets 30-150p, SL 15-50p, reacciones a volumen/soportes 1H. SWING lots=0.05-0.10 (más riesgo=0.05, menos=0.10), targets 150-500p, SL 50-150p, confluencia 4H+D+W. El SL NUNCA debe arriesgar más del 5% del capital ($5) por trade. Si ranging=bounces S/R. Si nivel clave cerca=ESPERAR. Scaling=entradas parciales con lotes menores. immediate_action=QUE HACER AHORA. Precios exactos. XM 500:1. En risk_management calcula riesgo real en USD para el lot sugerido.`,1500,true);
-  const p=JSON.parse(txt.replace(/```json|```/g,'').trim());if(!p.overall_bias)throw new Error('Bad plan');S.plan=p
+REGLAS: Capital=$100 USD. SCALP lots=0.02-0.04 (más riesgo=0.02, menos=0.04), targets 30-150p, SL 15-50p, reacciones a volumen/soportes 1H. SWING lots=0.05-0.10 (más riesgo=0.05, menos=0.10), targets 150-500p, SL 50-150p, confluencia 4H+D+W. El SL NUNCA debe arriesgar más del 5% del capital ($5) por trade. Si ranging=bounces S/R. Si nivel clave cerca=ESPERAR. Scaling=entradas parciales con lotes menores. immediate_action=QUE HACER AHORA. Precios exactos. XM 500:1. En risk_management calcula riesgo real en USD para el lot sugerido.
+MEMORIA: Revisa tus planes previos en la sección =MEMORIA=. Si tu bias anterior fue incorrecto, explica por qué y ajusta. Si fue correcto, mantén la estrategia. En memory_reflection indica qué aprendiste.`,1500,true);
+  const p=JSON.parse(txt.replace(/```json|```/g,'').trim());if(!p.overall_bias)throw new Error('Bad plan');
+  S.plan=p;
+  // Save to memory
+  savePlan(p,S.gold);
 }
 // RENDER
 function R(){
@@ -252,12 +316,15 @@ function rAI(){
   const p=S.plan,bc=b=>b==='BULLISH'?'var(--green)':b==='BEARISH'?'var(--red)':'var(--orange)';
   let h='<div class="fade-in">';
   h+=`<button class="btn-main" onclick="runPP()" ${S.pp.running?'disabled':''}>${S.pp.running?'<span class="spin">◌</span> ANALIZANDO...':'⚡ NUEVO ANÁLISIS'}</button>`;
+  const mc=getMemoryCount();
+  if(mc>0)h+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:6px 10px;background:var(--card);border-radius:8px;border:1px solid var(--border)"><div style="font-size:9px;color:var(--dim)">🧠 Memoria: <span style="color:var(--accent)">${mc} planes</span> guardados</div><button onclick="if(confirm('¿Borrar toda la memoria?')){clearMemory();R()}" style="font-size:8px;background:none;border:1px solid var(--border);color:var(--dim);padding:3px 8px;border-radius:4px;cursor:pointer;font-family:inherit">Limpiar</button></div>`;
   if(S.pp.running||S.pp.ph.some(x=>x.s!=='p'&&!S.plan))h+=rPP();
   if(S.err)h+=`<div class="card" style="border-color:rgba(239,68,68,.3);background:#1a0a0a"><div style="color:var(--red);font-size:11px">❌ ${S.err}</div></div>`;
   if(p){
     const ac=p.immediate_action?.includes('BUY')?'var(--green)':p.immediate_action?.includes('SELL')?'var(--red)':'var(--orange)';
     h+=`<div class="card" style="border:2px solid ${ac};background:${ac}11"><div class="card-label" style="color:${ac}">⚡ ACCIÓN INMEDIATA</div><div style="font-size:18px;font-weight:800;color:${ac};margin-bottom:4px">${(p.immediate_action||'').replace(/_/g,' ')}</div><div style="font-size:11px;line-height:1.4">${p.immediate_reason||''}</div></div>`;
     h+=`<div class="card" style="border-color:${bc(p.overall_bias)}33"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:20px;font-weight:800;color:${bc(p.overall_bias)}">${p.overall_bias}</div><div style="font-size:9px;color:var(--dim)">Str:${p.bias_strength}/10 Conf:${p.confidence}%</div></div><div style="text-align:right"><span class="badge badge-${p.market_phase?.includes('up')?'g':p.market_phase?.includes('down')?'r':'y'}">${(p.market_phase||'').toUpperCase()}</span><div style="font-size:8px;color:var(--dim);margin-top:3px">${p.next_review||''}</div></div></div></div>`;
+    if(p.memory_reflection)h+=`<div class="card" style="border-left:3px solid var(--accent);background:#18140a"><div class="card-label" style="color:var(--accent)">🧠 APRENDIZAJE</div><div style="font-size:10px;line-height:1.4;color:var(--text)">${p.memory_reflection}</div></div>`;
     if(p.scalp_plan?.active){const s=p.scalp_plan,ib=s.direction==='BUY',tc=ib?'var(--green)':'var(--red)';
       h+='<div class="sdiv" style="color:var(--cyan)">⚡ Scalp</div>';
       h+=`<div class="card" style="border-left:3px solid var(--cyan)"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><div style="font-size:16px;font-weight:800;color:${tc}">${ib?'🟢':'🔴'} ${s.direction}</div><div><span class="badge badge-c">${s.timeframe||''}</span> <span class="badge badge-def">${s.hold_time||''}</span></div></div>`;
