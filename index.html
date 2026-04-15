@@ -76,6 +76,24 @@ body{background:var(--bg);color:var(--text);font-family:'SF Mono','Menlo','Fira 
 .sdiv::before,.sdiv::after{content:'';flex:1;height:1px;background:var(--border)}
 @keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin 1s linear infinite;display:inline-block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn .3s ease-out}
+/* Chat */
+.chat-fab{position:fixed;bottom:20px;right:20px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#8b6914);border:none;color:#000;font-size:22px;cursor:pointer;z-index:200;box-shadow:0 4px 20px rgba(201,168,76,.4);display:flex;align-items:center;justify-content:center}
+.chat-fab:active{transform:scale(.9)}
+.chat-panel{position:fixed;bottom:0;left:0;right:0;top:0;max-width:460px;margin:0 auto;background:var(--bg);z-index:300;display:none;flex-direction:column}
+.chat-panel.open{display:flex}
+.chat-header{padding:12px 14px;background:#0a1020;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.chat-header-title{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:1px}
+.chat-close{background:none;border:1px solid var(--border);color:var(--dim);padding:4px 10px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit}
+.chat-messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.chat-msg{max-width:88%;padding:10px 12px;border-radius:12px;font-size:11px;line-height:1.5;word-wrap:break-word}
+.chat-msg.user{align-self:flex-end;background:var(--accent);color:#000;border-bottom-right-radius:4px}
+.chat-msg.ai{align-self:flex-start;background:var(--card);border:1px solid var(--border);border-bottom-left-radius:4px}
+.chat-msg.system{align-self:center;color:var(--dim);font-size:9px;text-align:center;padding:4px 8px}
+.chat-input-wrap{padding:10px 12px;background:#0a1020;border-top:1px solid var(--border);display:flex;gap:8px}
+.chat-input{flex:1;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:12px;outline:none;resize:none;max-height:80px}
+.chat-input:focus{border-color:var(--accent)}
+.chat-send{padding:10px 16px;background:var(--accent);border:none;border-radius:10px;color:#000;font-weight:800;font-family:inherit;font-size:11px;cursor:pointer}
+.chat-send:disabled{opacity:.4;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -101,6 +119,20 @@ body{background:var(--bg);color:var(--text);font-family:'SF Mono','Menlo','Fira 
     <div class="tabs" id="tB"><button class="active" data-tab="overview">OVERVIEW</button><button data-tab="tech">TÉCNICO</button><button data-tab="ai">AI PLAN</button><button data-tab="news">NEWS</button></div>
   </div>
   <div class="content" id="ct"></div>
+  <!-- CHAT FAB -->
+  <button class="chat-fab" onclick="toggleChat()" id="chatFab">💬</button>
+  <!-- CHAT PANEL -->
+  <div class="chat-panel" id="chatPanel">
+    <div class="chat-header">
+      <div class="chat-header-title">🧠 CHAT — XAU ANALYST</div>
+      <button class="chat-close" onclick="toggleChat()">✕ Cerrar</button>
+    </div>
+    <div class="chat-messages" id="chatMsgs"></div>
+    <div class="chat-input-wrap">
+      <textarea class="chat-input" id="chatIn" placeholder="Pregunta sobre el mercado..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
+      <button class="chat-send" id="chatSendBtn" onclick="sendChat()">Enviar</button>
+    </div>
+  </div>
   <div class="disclaimer">⚠️ No es asesoría financiera. Trading conlleva riesgo. Análisis IA orientativos.</div>
 </div>
 <script>
@@ -356,6 +388,143 @@ function rNW(){
     S.news.forEach(n=>h+=`<div class="news-item ${n.impact==='positive'?'pos':n.impact==='negative'?'neg':''}" style="padding:10px"><div style="display:flex;justify-content:space-between;gap:8px"><div style="flex:1"><div style="font-size:11px;font-weight:700;line-height:1.3;margin-bottom:3px">${n.title}</div><div style="font-size:10px;color:var(--dim);line-height:1.3">${n.summary||''}</div></div><div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end"><span class="badge badge-${n.impact==='positive'?'g':n.impact==='negative'?'r':'y'}">${(n.impact||'').toUpperCase()}</span>${n.weight?`<span style="font-size:8px;color:var(--dim)">${n.weight}</span>`:''}</div></div></div>`)
   }else{h+='<div class="empty">Ejecuta el pipeline para noticias</div>';h+=`<button class="btn-main" onclick="runPP()" ${S.pp.running?'disabled':''}>⚡ PIPELINE</button>`}
   return h+'</div>'}
+// ═══ CHAT SYSTEM ═══
+let chatHistory=[];
+let chatOpen=false;
+let chatBusy=false;
+
+function toggleChat(){
+  chatOpen=!chatOpen;
+  document.getElementById('chatPanel').classList.toggle('open',chatOpen);
+  document.getElementById('chatFab').style.display=chatOpen?'none':'flex';
+  if(chatOpen&&chatHistory.length===0){
+    addChatMsg('system','Tengo acceso a todos los datos del dashboard: precio, técnicos, plan IA, noticias, memoria. Pregunta lo que quieras.');
+  }
+  if(chatOpen)document.getElementById('chatIn').focus();
+}
+
+function addChatMsg(type,text){
+  const el=document.getElementById('chatMsgs');
+  const div=document.createElement('div');
+  div.className='chat-msg '+type;
+  div.textContent=text;
+  el.appendChild(div);
+  el.scrollTop=el.scrollHeight;
+  if(type!=='system')chatHistory.push({role:type==='user'?'user':'assistant',content:text});
+}
+
+function buildChatContext(){
+  // Build a comprehensive snapshot of all dashboard data
+  let ctx='=== ESTADO ACTUAL DEL DASHBOARD XAU/USD ===\n';
+  ctx+=`Precio: ${S.gold?'$'+S.gold.toFixed(2):'N/A'}\n`;
+  if(S.q)ctx+=`Quote: Open=$${S.q.o?.toFixed(2)} H=$${S.q.h?.toFixed(2)} L=$${S.q.l?.toFixed(2)} Change=${S.q.ch?.toFixed(2)}(${S.q.chp?.toFixed(2)}%)\n`;
+
+  // Technicals
+  if(S.c5m.length>10){
+    ctx+='\n--- TÉCNICOS ---\n';
+    ctx+=`RSI: 5M=${RSI(S.c5m)?.toFixed(1)} 15M=${RSI(S.c15m)?.toFixed(1)} 1H=${RSI(S.c1h)?.toFixed(1)} 4H=${RSI(S.c4h)?.toFixed(1)} D=${RSI(S.cD)?.toFixed(1)} W=${RSI(S.cW)?.toFixed(1)}\n`;
+    const m1=MACD(S.c1h),m4=MACD(S.c4h),mD=MACD(S.cD);
+    ctx+=`MACD hist: 1H=${m1?.h?.toFixed(2)} 4H=${m4?.h?.toFixed(2)} D=${mD?.h?.toFixed(2)}\n`;
+    ctx+=`ATR: 1H=${(ATR(S.c1h)*10)?.toFixed(0)}p 4H=${(ATR(S.c4h)*10)?.toFixed(0)}p D=${(ATR(S.cD)*10)?.toFixed(0)}p W=${(ATR(S.cW)*10)?.toFixed(0)}p\n`;
+    ctx+=`Stoch: 1H=${STOCH(S.c1h)?.toFixed(1)} D=${STOCH(S.cD)?.toFixed(1)}\n`;
+    const b1=BB(S.c1h),bD=BB(S.cD);
+    if(b1)ctx+=`BB 1H: U=$${b1.u.toFixed(2)} M=$${b1.m.toFixed(2)} L=$${b1.l.toFixed(2)} W=${b1.w.toFixed(2)}%\n`;
+    if(bD)ctx+=`BB D: U=$${bD.u.toFixed(2)} M=$${bD.m.toFixed(2)} L=$${bD.l.toFixed(2)} W=${bD.w.toFixed(2)}%\n`;
+    const v=VWAP(S.c1h);if(v)ctx+=`VWAP 1H: $${v.toFixed(2)} (precio ${S.gold>v?'ARRIBA':'DEBAJO'})\n`;
+    const z1=SZ(S.c1h),zD=SZ(S.cD);
+    ctx+=`Demand 1H: ${z1.d.map(x=>'$'+x.p.toFixed(2)).join(',')||'none'}\n`;
+    ctx+=`Supply 1H: ${z1.s.map(x=>'$'+x.p.toFixed(2)).join(',')||'none'}\n`;
+    ctx+=`Demand D: ${zD.d.map(x=>'$'+x.p.toFixed(2)).join(',')||'none'}\n`;
+    ctx+=`Supply D: ${zD.s.map(x=>'$'+x.p.toFixed(2)).join(',')||'none'}\n`;
+    const srD=SR(S.cD),srW=SR(S.cW);
+    ctx+=`Fib D: S=${srD.S.map(s=>s.toFixed(2))} R=${srD.R.map(r=>r.toFixed(2))}\n`;
+    ctx+=`Fib W: S=${srW.S.map(s=>s.toFixed(2))} R=${srW.R.map(r=>r.toFixed(2))}\n`;
+  }
+
+  // Correlations
+  if(S.corr.btc||S.corr.oil)ctx+=`\nCorrelaciones: BTC=$${S.corr.btc?.toFixed(0)||'?'} OIL=$${S.corr.oil?.toFixed(2)||'?'}\n`;
+
+  // Current plan
+  if(S.plan){
+    ctx+='\n--- PLAN IA ACTUAL ---\n';
+    ctx+=`Bias: ${S.plan.overall_bias} (${S.plan.bias_strength}/10, ${S.plan.confidence}%)\n`;
+    ctx+=`Fase: ${S.plan.market_phase}\n`;
+    ctx+=`Acción inmediata: ${S.plan.immediate_action} — ${S.plan.immediate_reason}\n`;
+    if(S.plan.memory_reflection)ctx+=`Aprendizaje: ${S.plan.memory_reflection}\n`;
+    if(S.plan.scalp_plan?.active){const s=S.plan.scalp_plan;ctx+=`Scalp: ${s.direction} Entry:$${s.entry_price} SL:$${s.stop_loss}(${s.sl_pips}p) TP1:$${s.tp1}(${s.tp1_pips}p) TP2:$${s.tp2}(${s.tp2_pips}p) R:R=${s.risk_reward} TF:${s.timeframe} Hold:${s.hold_time}\n`}
+    if(S.plan.swing_plan?.active){const sw=S.plan.swing_plan;ctx+=`Swing: ${sw.direction} Zone:$${sw.entry_zone?.from}-$${sw.entry_zone?.to} SL:$${sw.stop_loss}(${sw.sl_pips}p) TP1:$${sw.tp1}(${sw.tp1_pips}p) TP2:$${sw.tp2}(${sw.tp2_pips}p) TP3:$${sw.tp3}(${sw.tp3_pips}p) R:R=${sw.risk_reward} Horizon:${sw.horizon}\n`}
+    if(S.plan.key_levels?.length)ctx+=`Niveles: ${S.plan.key_levels.map(l=>`${l.label}=$${l.price}(${l.type},${l.importance})`).join(' | ')}\n`;
+    if(S.plan.invalidation)ctx+=`Invalidación: ${S.plan.invalidation}\n`;
+    if(S.plan.upcoming_catalysts?.length)ctx+=`Catalizadores: ${S.plan.upcoming_catalysts.join('; ')}\n`;
+  }
+
+  // News
+  if(S.news.length){
+    ctx+='\n--- NOTICIAS ---\n';
+    S.news.forEach(n=>ctx+=`[${n.impact}][${n.weight}] ${n.title}: ${n.summary}\n`);
+  }
+
+  // Memory
+  const mem=loadMemory();
+  if(mem.length){
+    ctx+=`\n--- MEMORIA (${mem.length} planes previos) ---\n`;
+    mem.slice(-3).forEach(m=>{
+      const age=Math.round((Date.now()-new Date(m.ts).getTime())/60000);
+      ctx+=`[${age<60?age+'min':Math.round(age/60)+'h'} ago] Px:$${m.px?.toFixed(2)} Bias:${m.bias}(${m.str}/10) Act:${m.act}`;
+      if(m.sc)ctx+=` Scalp:${m.sc.d}@${m.sc.e?.toFixed(2)}`;
+      if(m.sw)ctx+=` Swing:${m.sw.d}@${m.sw.ez?.from?.toFixed(2)}`;
+      ctx+='\n';
+    });
+  }
+
+  ctx+=`\nConfig: Capital=$100, Scalp lots=0.02-0.04, Swing lots=0.05-0.10, XM 500:1, Max risk 5%/trade\n`;
+  return ctx;
+}
+
+async function sendChat(){
+  if(chatBusy)return;
+  const input=document.getElementById('chatIn');
+  const msg=input.value.trim();
+  if(!msg)return;
+  input.value='';
+  addChatMsg('user',msg);
+  chatBusy=true;
+  document.getElementById('chatSendBtn').disabled=true;
+
+  // Add thinking indicator
+  const thinking=document.createElement('div');
+  thinking.className='chat-msg ai pulse';
+  thinking.textContent='Analizando...';
+  thinking.id='chatThinking';
+  document.getElementById('chatMsgs').appendChild(thinking);
+  document.getElementById('chatMsgs').scrollTop=document.getElementById('chatMsgs').scrollHeight;
+
+  try{
+    const ctx=buildChatContext();
+    // Build messages array with system context + chat history
+    const messages=[];
+    // Include last 10 messages of chat history for continuity
+    const recentHistory=chatHistory.slice(-10);
+    recentHistory.forEach(h=>messages.push(h));
+    // Replace last user message with enriched version
+    if(messages.length>0&&messages[messages.length-1].role==='user'){
+      messages[messages.length-1]={role:'user',content:`${ctx}\n\n--- PREGUNTA DEL TRADER ---\n${msg}\n\nResponde como analista experto de XAU/USD. Sé directo, conciso, con datos específicos. Si preguntan sobre una entrada, da precio exacto, SL, TP. Si preguntan sobre el mercado, usa los datos del dashboard. Capital=$100, XM 500:1. Responde en español. No uses markdown, solo texto plano.`};
+    }
+
+    const body={model:'claude-sonnet-4-20250514',max_tokens:800,messages};
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':S.aiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(d.error)throw new Error(d.error.message);
+    const reply=d.content?.filter(b=>b.type==='text').map(b=>b.text).join('')||'Sin respuesta';
+    thinking.remove();
+    addChatMsg('ai',reply);
+  }catch(e){
+    thinking.remove();
+    addChatMsg('ai','Error: '+e.message);
+  }
+  chatBusy=false;
+  document.getElementById('chatSendBtn').disabled=false;
+}
 </script>
 </body>
 </html>
