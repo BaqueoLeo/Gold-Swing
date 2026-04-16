@@ -144,7 +144,7 @@ pp:{running:false,ph:[
 {id:'c1h',n:'Velas 1H',s:'p',r:0,mx:5},{id:'c4h',n:'Velas 4H',s:'p',r:0,mx:5},
 {id:'cD',n:'Velas Daily',s:'p',r:0,mx:5},{id:'cW',n:'Velas Weekly',s:'p',r:0,mx:5},
 {id:'corr',n:'Correlaciones',s:'p',r:0,mx:5},
-{id:'news',n:'Noticias',s:'p',r:0,mx:10},
+{id:'news',n:'Noticias',s:'p',r:0,mx:4},
 {id:'plan',n:'Plan IA',s:'p',r:0,mx:10},
 {id:'paper',n:'Paper Trading',s:'p',r:0,mx:3}
 ],cp:0},
@@ -275,7 +275,26 @@ async function cAI(prompt,mt=1500,ws=false){
   const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':S.aiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});
   if(!r.ok){const e=await r.json().catch(()=>({}));if(r.status===429)throw new Error('RATE_LIMIT');throw new Error(e.error?.message||`HTTP ${r.status}`)}
   const d=await r.json();if(d.error)throw new Error(d.error.message);return d.content?.filter(b=>b.type==='text').map(b=>b.text).join('')||''}
-async function phNews(){const t=await cAI('Search latest news affecting gold XAU/USD NOW. Fed,CPI,NFP,DXY,bonds,geopolitics,oil. ONLY JSON array: [{"title":"str","impact":"positive"|"negative"|"neutral","summary":"1 sent","weight":"high"|"medium"|"low","timeframe":"immediate"|"this_week"|"ongoing"}]. Max 10.',1000,true);const p=JSON.parse(t.replace(/```json|```/g,'').trim());if(!Array.isArray(p)||!p.length)throw new Error('No news');S.news=p}
+async function phNews(){
+  // Try with web search first
+  try{
+    const t=await cAI('Search latest news affecting gold XAU/USD NOW. Fed,CPI,NFP,DXY,bonds,geopolitics,oil. ONLY JSON array: [{"title":"str","impact":"positive"|"negative"|"neutral","summary":"1 sent","weight":"high"|"medium"|"low"}]. Max 8.',800,true);
+    const p=JSON.parse(t.replace(/```json|```/g,'').trim());
+    if(Array.isArray(p)&&p.length){S.news=p;return}
+  }catch(e){
+    // If rate limit or search fails, try WITHOUT web search
+    if(e.message!=='RATE_LIMIT'){
+      try{
+        const t2=await cAI('List the most important current factors affecting gold XAU/USD prices right now based on your knowledge. Include Fed policy, USD strength, geopolitics, inflation. ONLY JSON array: [{"title":"str","impact":"positive"|"negative"|"neutral","summary":"1 sent","weight":"high"|"medium"|"low"}]. Max 6.',600,false);
+        const p2=JSON.parse(t2.replace(/```json|```/g,'').trim());
+        if(Array.isArray(p2)&&p2.length){S.news=p2;return}
+      }catch{}
+    }
+    throw e;
+  }
+  // If parsing failed but no error, skip gracefully
+  S.news=[{title:'News unavailable',impact:'neutral',summary:'Could not fetch news this cycle',weight:'low'}];
+}
 async function phPlan(){
   if(!S.gold||S.cD.length<20)throw new Error('No data');
   const paperCtx=`\n=PAPER TRADING=\nBalance:$${S.paper.balance.toFixed(2)} Equity:$${S.paper.equity.toFixed(2)} Open:${S.paper.openTrades.length}\n${S.paper.openTrades.map(t=>`${t.type} ${t.dir} ${t.lot}lots @${t.entry.toFixed(2)} SL:${t.sl.toFixed(2)} TP:${t.tp1.toFixed(2)} PnL:${t.pnl>=0?'+':''}$${t.pnl.toFixed(2)}`).join('\n')}\nLast 5 closed: ${S.paper.trades.slice(-5).map(t=>`${t.type}${t.dir}${t.status}${t.pnl>=0?'+':''}$${t.pnl.toFixed(2)}`).join(', ')||'none'}`;
