@@ -107,8 +107,9 @@ body{background:var(--bg);color:var(--text);font-family:'SF Mono','Menlo','Fira 
   <div class="sub">SCALP & SWING — PAPER TRADING</div>
   <input id="tdKey" type="text" placeholder="TwelveData API Key" autocomplete="off">
   <input id="aiKey" type="password" placeholder="Anthropic API Key (sk-ant-...)" autocomplete="off">
+  <input id="bvKey" type="password" placeholder="Brave Search API Key (opcional)" autocomplete="off">
   <button onclick="initApp()">INICIAR COMMAND CENTER</button>
-  <div class="note">Keys en localStorage. Llamadas directas a cada API.</div>
+  <div class="note">TwelveData y Anthropic requeridas. Brave es opcional pero recomendada para noticias más rápidas. Keys en localStorage.</div>
 </div>
 
 <div id="app">
@@ -137,7 +138,7 @@ body{background:var(--bg);color:var(--text);font-family:'SF Mono','Menlo','Fira 
 
 <script>
 // ═══ STATE ═══
-const S={tdKey:'',aiKey:'',gold:null,q:null,st:'wait',c5m:[],c15m:[],c1h:[],c4h:[],cD:[],cW:[],corr:{btc:null,oil:null},tab:'ov',plan:null,loading:false,err:null,news:[],lu:null,
+const S={tdKey:'',aiKey:'',bvKey:'',gold:null,q:null,st:'wait',c5m:[],c15m:[],c1h:[],c4h:[],cD:[],cW:[],corr:{btc:null,oil:null},tab:'ov',plan:null,loading:false,err:null,news:[],lu:null,
 pp:{running:false,ph:[
 {id:'quote',n:'Precio XAU/USD',s:'p',r:0,mx:5},
 {id:'c5m',n:'Velas 5M',s:'p',r:0,mx:5},{id:'c15m',n:'Velas 15M',s:'p',r:0,mx:5},
@@ -175,8 +176,8 @@ function SZ(c){if(c.length<20)return{d:[],s:[]};const d=[],s=[];for(let i=2;i<c.
 function VWAP(c){if(c.length<10)return null;let cm=0,cv=0;c.slice(-20).forEach(x=>{const tp=(x.h+x.l+x.c)/3,v=x.h-x.l;cm+=tp*v;cv+=v});return cv>0?cm/cv:null}
 
 // ═══ INIT ═══
-function initApp(){const k=document.getElementById('tdKey').value.trim(),a=document.getElementById('aiKey').value.trim();if(!k||!a){alert('Necesitas ambas keys');return}S.tdKey=k;S.aiKey=a;localStorage.setItem('td_key',k);localStorage.setItem('ai_key',a);document.getElementById('setup').style.display='none';document.getElementById('app').style.display='block';document.getElementById('chatBubble').style.display='flex';setupTabs();R();setInterval(()=>{if(!S.pp.running){enq(TD('price?symbol=XAU/USD'),d=>{if(d?.price){S.gold=+d.price;S.st='live';S.lu=new Date();updateOpenTrades();R()}})}},30000)}
-window.addEventListener('DOMContentLoaded',()=>{const k=localStorage.getItem('td_key');if(k)document.getElementById('tdKey').value=k;const a=localStorage.getItem('ai_key');if(a)document.getElementById('aiKey').value=a});
+function initApp(){const k=document.getElementById('tdKey').value.trim(),a=document.getElementById('aiKey').value.trim(),b=document.getElementById('bvKey').value.trim();if(!k||!a){alert('Necesitas TwelveData y Anthropic keys');return}S.tdKey=k;S.aiKey=a;S.bvKey=b;localStorage.setItem('td_key',k);localStorage.setItem('ai_key',a);if(b)localStorage.setItem('bv_key',b);document.getElementById('setup').style.display='none';document.getElementById('app').style.display='block';document.getElementById('chatBubble').style.display='flex';setupTabs();R();setInterval(()=>{if(!S.pp.running){enq(TD('price?symbol=XAU/USD'),d=>{if(d?.price){S.gold=+d.price;S.st='live';S.lu=new Date();updateOpenTrades();R()}})}},30000)}
+window.addEventListener('DOMContentLoaded',()=>{const k=localStorage.getItem('td_key');if(k)document.getElementById('tdKey').value=k;const a=localStorage.getItem('ai_key');if(a)document.getElementById('aiKey').value=a;const b=localStorage.getItem('bv_key');if(b)document.getElementById('bvKey').value=b});
 function setupTabs(){document.querySelectorAll('#tB button').forEach(b=>b.addEventListener('click',()=>{S.tab=b.dataset.tab;document.querySelectorAll('#tB button').forEach(x=>x.classList.remove('on'));b.classList.add('on');R()}))}
 async function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
 
@@ -276,33 +277,55 @@ async function cAI(prompt,mt=1500,ws=false){
   if(!r.ok){const e=await r.json().catch(()=>({}));if(r.status===429)throw new Error('RATE_LIMIT');throw new Error(e.error?.message||`HTTP ${r.status}`)}
   const d=await r.json();if(d.error)throw new Error(d.error.message);return d.content?.filter(b=>b.type==='text').map(b=>b.text).join('')||''}
 async function phNews(){
-  // Robust JSON extractor
-  const extractJSON=txt=>{
-    let c=txt.replace(/```json|```/g,'').trim();
-    const start=c.indexOf('['),end=c.lastIndexOf(']');
-    if(start===-1||end===-1||end<start)return null;
-    const s=c.substring(start,end+1);
-    try{return JSON.parse(s)}catch{}
-    try{return JSON.parse(s.replace(/,(\s*[\]}])/g,'$1'))}catch{}
-    return null;
-  };
-  // Try 1: with web search
+  const extractJSON=txt=>{let c=txt.replace(/```json|```/g,'').trim();const s=c.indexOf('['),e=c.lastIndexOf(']');if(s===-1||e===-1||e<s)return null;const x=c.substring(s,e+1);try{return JSON.parse(x)}catch{}try{return JSON.parse(x.replace(/,(\s*[\]}])/g,'$1'))}catch{}return null;};
+  
+  // PRIMARY: Brave Search API
+  if(S.bvKey){
+    try{
+      const r=await fetch('https://api.search.brave.com/res/v1/news/search?q=gold+XAUUSD+price+USD+fed+inflation+geopolitics&count=10&freshness=pd',{
+        headers:{'X-Subscription-Token':S.bvKey,'Accept':'application/json'}
+      });
+      if(r.ok){
+        const d=await r.json();
+        if(d.results?.length){
+          const raw=d.results.slice(0,10).map(n=>({
+            title:n.title,
+            summary:(n.description||'').slice(0,200),
+            source:n.profile?.name||n.meta_url?.hostname||'',
+            age:n.age||''
+          }));
+          // Let Claude classify impact/weight in one fast call
+          try{
+            const t=await cAI(`Classify these gold-market news for XAU/USD. Return ONLY JSON array same order: [{"title":"exact_title","impact":"positive"|"negative"|"neutral","weight":"high"|"medium"|"low","timeframe":"immediate"|"this_week"|"ongoing"}]. Positive=bullish for gold (USD weakness, risk-off, inflation, war, Fed dovish). Negative=bearish (strong USD, risk-on, Fed hawkish). Input: ${JSON.stringify(raw.map(n=>n.title))}`,800,false);
+            const cls=extractJSON(t);
+            if(Array.isArray(cls)){
+              S.news=raw.map((n,i)=>({...n,impact:cls[i]?.impact||'neutral',weight:cls[i]?.weight||'medium',timeframe:cls[i]?.timeframe||'ongoing'}));
+              return;
+            }
+          }catch{}
+          // If classification fails, still use raw news with neutral impact
+          S.news=raw.map(n=>({...n,impact:'neutral',weight:'medium',timeframe:'ongoing'}));
+          return;
+        }
+      }
+    }catch(e){console.warn('Brave failed:',e)}
+  }
+  
+  // FALLBACK 1: Anthropic web search
   try{
-    const t=await cAI('Search current news affecting gold XAU/USD. Return ONLY a JSON array, nothing else. Format: [{"title":"string","impact":"positive"|"negative"|"neutral","summary":"short","weight":"high"|"medium"|"low"}]. Max 8 items. If nothing found return [].',800,true);
+    const t=await cAI('Search current news affecting gold XAU/USD. Return ONLY a JSON array: [{"title":"str","impact":"positive"|"negative"|"neutral","summary":"short","weight":"high"|"medium"|"low"}]. Max 8. If nothing found return [].',800,true);
     const p=extractJSON(t);
     if(Array.isArray(p)){S.news=p.filter(n=>n&&n.title).slice(0,10);return}
-  }catch(e){
-    if(e.message==='RATE_LIMIT')throw e; // Let pipeline retry on rate limit
-  }
-  // Try 2: without web search (fallback using model knowledge)
+  }catch(e){if(e.message==='RATE_LIMIT')throw e;}
+  
+  // FALLBACK 2: Claude knowledge only
   try{
-    const t=await cAI('List the most important current factors affecting gold XAU/USD based on recent market conditions. Return ONLY a JSON array: [{"title":"string","impact":"positive"|"negative"|"neutral","summary":"short","weight":"high"|"medium"|"low"}]. Max 6 items.',500,false);
+    const t=await cAI('List important current factors affecting gold XAU/USD based on recent market conditions. Return ONLY a JSON array: [{"title":"str","impact":"positive"|"negative"|"neutral","summary":"short","weight":"high"|"medium"|"low"}]. Max 6.',500,false);
     const p=extractJSON(t);
     if(Array.isArray(p)){S.news=p.filter(n=>n&&n.title).slice(0,10);return}
-  }catch(e){
-    if(e.message==='RATE_LIMIT')throw e;
-  }
-  // Accept empty news rather than blocking pipeline
+  }catch(e){if(e.message==='RATE_LIMIT')throw e;}
+  
+  // Never block pipeline
   S.news=[{title:'News feed unavailable',impact:'neutral',summary:'Proceeding with technical analysis only',weight:'low'}];
 }
 async function phPlan(){
