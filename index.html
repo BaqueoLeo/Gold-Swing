@@ -311,16 +311,9 @@ async function phNews(){
     }catch(e){console.warn('Brave failed:',e)}
   }
   
-  // FALLBACK 1: Anthropic web search
+  // FALLBACK 1: Claude knowledge (no web search to save credits)
   try{
-    const t=await cAI('Search current news affecting gold XAU/USD. Return ONLY a JSON array: [{"title":"str","impact":"positive"|"negative"|"neutral","summary":"short","weight":"high"|"medium"|"low"}]. Max 8. If nothing found return [].',800,true);
-    const p=extractJSON(t);
-    if(Array.isArray(p)){S.news=p.filter(n=>n&&n.title).slice(0,10);return}
-  }catch(e){if(e.message==='RATE_LIMIT')throw e;}
-  
-  // FALLBACK 2: Claude knowledge only
-  try{
-    const t=await cAI('List important current factors affecting gold XAU/USD based on recent market conditions. Return ONLY a JSON array: [{"title":"str","impact":"positive"|"negative"|"neutral","summary":"short","weight":"high"|"medium"|"low"}]. Max 6.',500,false);
+    const t=await cAI('List the most important current factors affecting gold XAU/USD based on recent market conditions. Return ONLY a JSON array: [{"title":"str","impact":"positive"|"negative"|"neutral","summary":"short","weight":"high"|"medium"|"low"}]. Max 8. If nothing return [].',600,false);
     const p=extractJSON(t);
     if(Array.isArray(p)){S.news=p.filter(n=>n&&n.title).slice(0,10);return}
   }catch(e){if(e.message==='RATE_LIMIT')throw e;}
@@ -348,7 +341,7 @@ JSON(sin markdown):{"timestamp":"ISO","market_phase":"trending_up"|"trending_dow
 "risk_management":{"capital":${S.paper.balance.toFixed(2)},"scalp_lot":0,"scalp_risk_usd":0,"swing_lot":0,"swing_risk_usd":0,"max_daily_loss_usd":0},
 "trade_commands":[{"action":"open"|"close"|"modify","type":"scalp"|"swing","direction":"BUY"|"SELL","lot":0,"entry":0,"sl":0,"tp1":0,"tp2":0,"reason":"str","trade_id":0}],
 "next_review":"str"}
-Capital=$${S.paper.balance.toFixed(2)}. SCALP:0.02-0.04lots,30-150p,SL15-50p. SWING:0.05-0.10lots,150-500p,SL50-150p. Max5%riesgo/trade. trade_commands=ordenes para paper trading(open/close/modify). Si hay trades abiertos que deben cerrarse, inclúyelos. Considera el PnL actual de trades abiertos.`,1500,true);
+Capital=$${S.paper.balance.toFixed(2)}. SCALP:0.02-0.04lots,30-150p,SL15-50p. SWING:0.05-0.10lots,150-500p,SL50-150p. Max5%riesgo/trade. trade_commands=ordenes para paper trading(open/close/modify). Si hay trades abiertos que deben cerrarse, inclúyelos. Considera el PnL actual de trades abiertos.`,1500,false);
   const p=JSON.parse(txt.replace(/```json|```/g,'').trim());if(!p.overall_bias)throw new Error('Bad');S.plan=p;savePlan(p,S.gold);
   // Execute trade commands
   if(p.trade_commands?.length){p.trade_commands.forEach(cmd=>{
