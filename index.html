@@ -8,245 +8,104 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
 
 :root {
-  --bg: #0a0a0c;
-  --panel: #111116;
-  --border: #1e1e28;
-  --gold: #d4a843;
-  --gold-dim: #8a6a20;
-  --red: #e05555;
-  --green: #4ecb71;
-  --text: #c8c8d8;
-  --muted: #555568;
-  --accent: #1a1a22;
+  --bg:#0a0a0c; --panel:#111116; --border:#1e1e28;
+  --gold:#d4a843; --gold-dim:#8a6a20;
+  --red:#e05555; --green:#4ecb71;
+  --text:#c8c8d8; --muted:#555568; --accent:#1a1a22;
 }
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;min-height:100vh;padding:16px;font-size:12px;}
 
-* { margin:0; padding:0; box-sizing:border-box; }
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.title{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--gold);}
+.subtitle{font-size:9px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:2px;}
+.tag{background:var(--gold);color:#000;font-size:9px;font-weight:700;padding:3px 8px;border-radius:2px;letter-spacing:1px;}
 
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Space Mono', monospace;
-  min-height: 100vh;
-  padding: 16px;
-  font-size: 12px;
-}
+/* SETUP SCREEN */
+#setup-screen{display:flex;flex-direction:column;gap:10px;}
+.setup-box{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:18px 16px;}
+.setup-box h3{font-family:'Syne',sans-serif;font-size:13px;color:var(--gold);margin-bottom:10px;}
+.setup-box p{font-size:9px;color:var(--muted);line-height:1.8;margin-bottom:12px;}
+.key-row{margin-bottom:10px;}
+.key-label{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+.key-input{width:100%;background:var(--accent);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'Space Mono',monospace;font-size:10px;padding:9px 12px;outline:none;}
+.key-input:focus{border-color:var(--gold-dim);}
+.btn-start{width:100%;padding:13px;background:var(--gold);color:#000;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;cursor:pointer;border-radius:4px;border:none;transition:all 0.2s;margin-top:4px;}
+.btn-start:hover{background:#c49030;}
 
-/* ── HEADER ── */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
-}
-.title { font-family:'Syne',sans-serif; font-weight:800; font-size:22px; color:var(--gold); }
-.subtitle { font-size:9px; color:var(--muted); margin-top:2px; text-transform:uppercase; letter-spacing:2px; }
-.tag { background:var(--gold); color:#000; font-size:9px; font-weight:700; padding:3px 8px; border-radius:2px; letter-spacing:1px; }
+/* DASHBOARD */
+#dashboard{display:none;}
 
-/* ── API KEY SCREEN ── */
-#api-screen {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 8px;
-}
-.api-box {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 20px 16px;
-}
-.api-box p { font-size:10px; color:var(--muted); line-height:1.8; margin-bottom:14px; }
-.api-box p strong { color:var(--gold); }
-.api-input {
-  width: 100%;
-  background: var(--accent);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
-  font-family: 'Space Mono', monospace;
-  font-size: 11px;
-  padding: 10px 12px;
-  margin-bottom: 10px;
-  outline: none;
-}
-.api-input:focus { border-color: var(--gold-dim); }
+/* DATA BAR */
+.data-bar{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-bottom:10px;font-size:9px;color:var(--muted);line-height:2;}
+.data-bar strong{color:var(--gold);}
+.data-bar .price{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--gold);}
+.data-bar .change-up{color:var(--green);}
+.data-bar .change-dn{color:var(--red);}
+.data-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;}
+.dbox{background:var(--accent);border-radius:4px;padding:6px 8px;}
+.dlabel{font-size:7px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;}
+.dval{font-size:10px;font-weight:700;color:var(--text);}
+.dval.up{color:var(--green);} .dval.dn{color:var(--red);}
 
-/* ── MAIN DASHBOARD ── */
-#dashboard { display:none; }
+/* WORKFLOW */
+.workflow{display:flex;align-items:center;margin-bottom:10px;overflow:hidden;border-radius:6px;border:1px solid var(--border);}
+.wf-step{flex:1;padding:7px 2px;text-align:center;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);background:var(--panel);transition:all 0.3s;}
+.wf-step.active{color:var(--gold);background:rgba(212,168,67,0.08);}
+.wf-step.done{color:var(--green);background:rgba(78,203,113,0.05);}
+.wf-sep{color:var(--border);font-size:10px;background:var(--panel);padding:7px 1px;}
 
-/* ── STATUS BAR ── */
-.status-bar {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px 14px;
-  margin-bottom: 12px;
-  font-size: 9px;
-  color: var(--muted);
-  line-height: 1.8;
-}
-.status-bar strong { color: var(--gold); }
-
-/* ── WORKFLOW ── */
-.workflow {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  margin-bottom: 12px;
-  overflow: hidden;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-}
-.wf-step {
-  flex: 1;
-  padding: 8px 4px;
-  text-align: center;
-  font-size: 8px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--muted);
-  background: var(--panel);
-  transition: all 0.3s;
-  position: relative;
-}
-.wf-step.active { color: var(--gold); background: rgba(212,168,67,0.08); }
-.wf-step.done { color: var(--green); background: rgba(78,203,113,0.05); }
-.wf-step.error-step { color: var(--red); background: rgba(224,85,85,0.05); }
-.wf-sep { color: var(--border); font-size:10px; background:var(--panel); padding:8px 2px; }
-
-/* ── PANELS ── */
-.panels { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
-
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 14px;
-  position: relative;
-  overflow: hidden;
-}
-.panel.swing::before { content:''; position:absolute; top:0;left:0;right:0; height:2px; background:var(--gold); }
-.panel.scalp::before { content:''; position:absolute; top:0;left:0;right:0; height:2px; background:var(--green); }
-
-.panel-label {
-  font-family:'Syne',sans-serif;
-  font-size:9px; font-weight:600;
-  text-transform:uppercase; letter-spacing:3px;
-  color:var(--muted);
-  margin-bottom:10px;
-  display:flex; justify-content:space-between; align-items:center;
-}
-
-.badge { font-size:7px; padding:2px 5px; border-radius:2px; letter-spacing:1px; }
-.badge-gold { background:rgba(212,168,67,0.12); color:var(--gold); border:1px solid var(--gold-dim); }
-.badge-green { background:rgba(78,203,113,0.1); color:var(--green); border:1px solid rgba(78,203,113,0.3); display:flex;align-items:center;gap:3px; }
-
-.live-dot { width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite; }
+/* PANELS */
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:13px;position:relative;overflow:hidden;}
+.panel.swing::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--gold);}
+.panel.scalp::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--green);}
+.panel-label{font-family:'Syne',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:3px;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.badge{font-size:7px;padding:2px 5px;border-radius:2px;letter-spacing:1px;}
+.badge-gold{background:rgba(212,168,67,0.12);color:var(--gold);border:1px solid var(--gold-dim);}
+.badge-green{background:rgba(78,203,113,0.1);color:var(--green);border:1px solid rgba(78,203,113,0.3);display:flex;align-items:center;gap:3px;}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
-
-.direction { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; margin-bottom:2px; }
+.direction{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:2px;}
 .bull{color:var(--green)} .bear{color:var(--red)} .neutral{color:var(--gold)}
-
-.levels { display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:8px; }
-.lbox { background:var(--accent); border-radius:4px; padding:6px 8px; }
-.llabel { font-size:7px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:2px; }
-.lval { font-size:11px; font-weight:700; }
+.levels{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px;}
+.lbox{background:var(--accent);border-radius:4px;padding:6px 8px;}
+.llabel{font-size:7px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;}
+.lval{font-size:11px;font-weight:700;}
 .lval.tp{color:var(--green)} .lval.sl{color:var(--red)} .lval.en{color:var(--text)} .lval.gv{color:var(--gold)}
+.reason{font-size:9px;color:var(--muted);line-height:1.7;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+.reason strong{color:var(--text);}
+.swing-status{font-size:8px;color:var(--muted);margin-top:6px;padding:5px 7px;background:rgba(212,168,67,0.05);border-radius:3px;border-left:2px solid var(--gold-dim);line-height:1.5;}
+.swing-status.confirmed{border-left-color:var(--green);color:rgba(78,203,113,0.8);background:rgba(78,203,113,0.04);}
+.ts{font-size:7px;color:var(--muted);text-align:right;margin-top:4px;}
 
-.reason {
-  font-size:9px; color:var(--muted); line-height:1.7;
-  margin-top:8px; padding-top:8px; border-top:1px solid var(--border);
-}
-.reason strong{color:var(--text)}
+/* NEWS */
+.news-panel{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:13px;margin-bottom:10px;}
+.news-panel h4{font-family:'Syne',sans-serif;font-size:9px;color:var(--gold);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;}
+.news-item{font-size:9px;color:var(--muted);padding:5px 0;border-bottom:1px solid var(--border);line-height:1.6;}
+.news-item:last-child{border-bottom:none;}
+.news-item strong{color:var(--text);}
 
-.swing-status {
-  font-size:8px; color:var(--muted);
-  margin-top:6px; padding:5px 7px;
-  background:rgba(212,168,67,0.05);
-  border-radius:3px; border-left:2px solid var(--gold-dim);
-  line-height:1.5;
-}
-.swing-status.confirmed { border-left-color:var(--green); color:rgba(78,203,113,0.8); background:rgba(78,203,113,0.04); }
-
-.ts { font-size:7px; color:var(--muted); text-align:right; margin-top:4px; }
-
-/* ── OVERLAY ── */
-.ov {
-  position:absolute; inset:0;
-  background:rgba(17,17,22,0.92);
-  display:flex; align-items:center; justify-content:center;
-  font-size:8px; color:var(--muted); letter-spacing:2px;
-  z-index:10; opacity:0; pointer-events:none; transition:opacity 0.2s;
-  border-radius:6px;
-}
-.ov.show{opacity:1;pointer-events:all}
-
-.spinner {
-  width:13px;height:13px;
-  border:2px solid var(--border);
-  border-radius:50%;
-  animation:spin 0.8s linear infinite;
-  margin-right:7px;
-}
+/* OVERLAY */
+.ov{position:absolute;inset:0;background:rgba(17,17,22,0.93);display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--muted);letter-spacing:2px;z-index:10;opacity:0;pointer-events:none;transition:opacity 0.2s;border-radius:6px;}
+.ov.show{opacity:1;pointer-events:all;}
+.spinner{width:13px;height:13px;border:2px solid var(--border);border-radius:50%;animation:spin 0.8s linear infinite;margin-right:7px;}
 .sp-gold{border-top-color:var(--gold)} .sp-green{border-top-color:var(--green)}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ── BIG BUTTON ── */
-.btn-main {
-  width:100%;
-  padding: 16px;
-  background: transparent;
-  border: 1px solid var(--gold);
-  color: var(--gold);
-  font-family:'Space Mono',monospace;
-  font-size:11px; font-weight:700;
-  letter-spacing:3px; text-transform:uppercase;
-  cursor:pointer; border-radius:6px;
-  transition:all 0.2s;
-  position:relative; overflow:hidden;
-}
-.btn-main:hover:not(:disabled){background:rgba(212,168,67,0.07)}
-.btn-main:active{transform:scale(0.98)}
-.btn-main:disabled{opacity:0.4;cursor:not-allowed}
+/* BUTTONS */
+.btn-main{width:100%;padding:15px;background:transparent;border:1px solid var(--gold);color:var(--gold);font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;cursor:pointer;border-radius:6px;transition:all 0.2s;position:relative;overflow:hidden;}
+.btn-main:hover:not(:disabled){background:rgba(212,168,67,0.07);}
+.btn-main:active{transform:scale(0.98);}
+.btn-main:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-sm{width:100%;padding:9px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'Space Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border-radius:4px;transition:all 0.2s;margin-top:7px;}
+.btn-sm:hover{color:var(--text);border-color:var(--muted);}
+.lbar{position:absolute;bottom:0;left:0;height:2px;width:0%;background:var(--gold);transition:width 0.1s linear;}
 
-.btn-sm {
-  width:100%;
-  padding:10px;
-  background:transparent;
-  border:1px solid var(--border);
-  color:var(--muted);
-  font-family:'Space Mono',monospace;
-  font-size:9px; font-weight:700;
-  letter-spacing:2px; text-transform:uppercase;
-  cursor:pointer; border-radius:4px;
-  transition:all 0.2s; margin-top:8px;
-}
-.btn-sm:hover{color:var(--text);border-color:var(--muted)}
-
-.lbar {
-  position:absolute; bottom:0;left:0;
-  height:2px; width:0%;
-  background:var(--gold);
-  transition:width 0.1s linear;
-}
-
-.fade-in{animation:fadeIn 0.35s ease}
+.fade-in{animation:fadeIn 0.35s ease;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
 
-/* ── BTN START ── */
-.btn-start {
-  width:100%; padding:14px;
-  background:var(--gold); color:#000;
-  font-family:'Space Mono',monospace;
-  font-size:11px; font-weight:700;
-  letter-spacing:3px; text-transform:uppercase;
-  cursor:pointer; border-radius:4px; border:none;
-  transition:all 0.2s;
-}
-.btn-start:hover{background:#c49030}
-.btn-start:active{transform:scale(0.98)}
+.err{color:var(--red);font-size:9px;}
 </style>
 </head>
 <body>
@@ -259,16 +118,23 @@ body {
   <div class="tag" id="hdr-tag">SETUP</div>
 </div>
 
-<!-- API KEY SCREEN -->
-<div id="api-screen">
-  <div class="api-box">
-    <p>
-      <strong>Anthropic API Key requerida</strong><br>
-      Esta app llama directamente a Claude para generar análisis en tiempo real.<br><br>
-      Obtén tu key en <strong>console.anthropic.com → API Keys</strong>.<br>
-      Se guarda solo en tu dispositivo (localStorage), nunca se envía a terceros.
-    </p>
-    <input class="api-input" id="api-input" type="password" placeholder="sk-ant-api03-..." />
+<!-- SETUP -->
+<div id="setup-screen">
+  <div class="setup-box">
+    <h3>Configuración de API Keys</h3>
+    <p>Se guardan en tu dispositivo. Nunca se envían a terceros.</p>
+    <div class="key-row">
+      <div class="key-label">Anthropic (Claude)</div>
+      <input class="key-input" id="k-claude" type="password" placeholder="sk-ant-api03-..." />
+    </div>
+    <div class="key-row">
+      <div class="key-label">Twelve Data (precio + técnicos)</div>
+      <input class="key-input" id="k-twelve" type="password" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+    </div>
+    <div class="key-row">
+      <div class="key-label">Brave Search (noticias macro)</div>
+      <input class="key-input" id="k-brave" type="password" placeholder="BSA..." />
+    </div>
     <button class="btn-start" onclick="startApp()">INICIAR DASHBOARD →</button>
   </div>
 </div>
@@ -276,26 +142,46 @@ body {
 <!-- DASHBOARD -->
 <div id="dashboard">
 
-  <!-- Macro context -->
-  <div class="status-bar">
-    <strong>Macro:</strong> Retail Sales Mar · FOMC 28-29 abr · Negociaciones EEUU-Irán · Ormuz cerrado · XAU ~$4,782
+  <!-- Price + Technical Data -->
+  <div class="data-bar" id="data-bar">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div class="price" id="d-price">—</div>
+        <span id="d-change" style="font-size:9px;">cargando...</span>
+      </div>
+      <div style="text-align:right;font-size:8px;color:var(--muted);" id="d-time">—</div>
+    </div>
+    <div class="data-grid">
+      <div class="dbox"><div class="dlabel">RSI (14)</div><div class="dval" id="d-rsi">—</div></div>
+      <div class="dbox"><div class="dlabel">ATR (14)</div><div class="dval" id="d-atr">—</div></div>
+      <div class="dbox"><div class="dlabel">EMA 20</div><div class="dval" id="d-ema20">—</div></div>
+      <div class="dbox"><div class="dlabel">EMA 50</div><div class="dval" id="d-ema50">—</div></div>
+      <div class="dbox"><div class="dlabel">MACD</div><div class="dval" id="d-macd">—</div></div>
+      <div class="dbox"><div class="dlabel">Señal</div><div class="dval" id="d-signal">—</div></div>
+    </div>
   </div>
 
-  <!-- Workflow indicator -->
+  <!-- News -->
+  <div class="news-panel">
+    <h4>📰 Noticias Macro</h4>
+    <div id="news-list"><span style="color:var(--muted);font-size:9px;">Cargando noticias...</span></div>
+  </div>
+
+  <!-- Workflow -->
   <div class="workflow">
-    <div class="wf-step" id="wf1">1 · Swing</div>
+    <div class="wf-step" id="wf1">Datos</div>
     <div class="wf-sep">›</div>
-    <div class="wf-step" id="wf2">2 · Verificar</div>
+    <div class="wf-step" id="wf2">Noticias</div>
     <div class="wf-sep">›</div>
-    <div class="wf-step" id="wf3">3 · Scalp</div>
+    <div class="wf-step" id="wf3">Swing</div>
     <div class="wf-sep">›</div>
-    <div class="wf-step" id="wf4">Listo</div>
+    <div class="wf-step" id="wf4">Scalp</div>
+    <div class="wf-sep">›</div>
+    <div class="wf-step" id="wf5">✓</div>
   </div>
 
   <!-- Panels -->
   <div class="panels">
-
-    <!-- SWING -->
     <div class="panel swing">
       <div class="panel-label">
         <span style="color:var(--gold)">⬛ SWING</span>
@@ -317,7 +203,6 @@ body {
       <div class="ts" id="sw-ts">—</div>
     </div>
 
-    <!-- SCALP -->
     <div class="panel scalp">
       <div class="panel-label">
         <span style="color:var(--green)">⚡ SCALP</span>
@@ -337,110 +222,203 @@ body {
       </div>
       <div class="ts" id="sc-ts">—</div>
     </div>
-
   </div>
 
-  <!-- MAIN BUTTON -->
   <button class="btn-main" id="btn-main" onclick="runAll()">
     ↻ &nbsp; ACTUALIZAR ANÁLISIS
     <div class="lbar" id="lbar"></div>
   </button>
-
   <button class="btn-sm" onclick="resetSwing()">⟳ Forzar nuevo plan swing</button>
-  <button class="btn-sm" onclick="resetKey()" style="margin-top:4px;font-size:8px;opacity:0.5">Cambiar API key</button>
-
+  <button class="btn-sm" onclick="resetKeys()" style="margin-top:4px;opacity:0.4;">Cambiar API keys</button>
 </div>
 
 <script>
-const API_URL = "https://api.anthropic.com/v1/messages";
-const SWING_KEY = "xau_swing_v3";
-const APIKEY_KEY = "xau_apikey";
+const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+const SWING_KEY = "xau_swing_v4";
+const KEYS_KEY  = "xau_keys_v1";
 
-const MACRO = `Contexto macro XAU/USD (abril 2026):
-- Precio ~$4,782, cayó ~10% desde inicio conflicto EEUU-Irán
-- Estrecho de Ormuz cerrado, ceasefire vence pronto
-- Retail Sales marzo: consenso +1.4% MoM (fuerte = USD sube = bearish oro)
-- FOMC 28-29 abril (ventana hawkish)
-- Trump: no extenderá tregua sin acuerdo
-- Acuerdo Iran = spike alcista; sin acuerdo + retail fuerte = bajista`;
+let KEYS = { claude:'', twelve:'', brave:'' };
+let marketData = {};
+let newsContext = '';
 
-let apiKey = '';
+function getTime(){ return new Date().toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}); }
 
-function getTime() {
-  return new Date().toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'});
+function setWf(n){
+  for(let i=1;i<=5;i++){
+    const el=document.getElementById('wf'+i);
+    el.className='wf-step'+(i<n?' done':i===n?' active':'');
+  }
 }
 
-function setWf(step) {
-  // step: 0=idle, 1=swing, 2=verify, 3=scalp, 4=done, -1=error
-  ['wf1','wf2','wf3','wf4'].forEach((id,i) => {
-    const el = document.getElementById(id);
-    el.className = 'wf-step';
-    if(step === -1 && i === (Math.abs(step)-1)) el.classList.add('error-step');
-    else if(i+1 < step) el.classList.add('done');
-    else if(i+1 === step) el.classList.add('active');
-  });
-}
-
-function animBar(on) {
-  const bar = document.getElementById('lbar');
-  if(!on){ bar.style.transition='none'; bar.style.width='0%'; return; }
+function animBar(on){
+  const bar=document.getElementById('lbar');
+  if(!on){bar.style.transition='none';bar.style.width='0%';return ()=>{};}
   bar.style.transition='width 0.1s linear';
   let w=0;
-  const iv = setInterval(()=>{ w=Math.min(w+Math.random()*5,90); bar.style.width=w+'%'; },200);
-  return ()=>{ clearInterval(iv); bar.style.width='100%'; setTimeout(()=>animBar(false),400); };
+  const iv=setInterval(()=>{w=Math.min(w+Math.random()*5,88);bar.style.width=w+'%';},200);
+  return ()=>{clearInterval(iv);bar.style.width='100%';setTimeout(()=>animBar(false),400);};
 }
 
-function setDir(id, dir) {
-  const el = document.getElementById(id);
-  el.textContent = dir;
-  el.className = 'direction '+(dir==='BUY'?'bull':dir==='SELL'?'bear':'neutral');
+function setDir(id,dir){
+  const el=document.getElementById(id);
+  el.textContent=dir;
+  el.className='direction '+(dir==='BUY'?'bull':dir==='SELL'?'bear':'neutral');
 }
 
-function flash(id) {
-  const el = document.getElementById(id);
-  el.classList.remove('fade-in'); void el.offsetWidth; el.classList.add('fade-in');
+function flash(id){
+  const el=document.getElementById(id);
+  el.classList.remove('fade-in');void el.offsetWidth;el.classList.add('fade-in');
 }
 
-function loadSwing() {
-  try { return JSON.parse(localStorage.getItem(SWING_KEY)); } catch { return null; }
-}
-function saveSwing(d) { localStorage.setItem(SWING_KEY, JSON.stringify(d)); }
+function loadSwing(){ try{return JSON.parse(localStorage.getItem(SWING_KEY));}catch{return null;} }
+function saveSwing(d){ localStorage.setItem(SWING_KEY,JSON.stringify(d)); }
 
-function renderSwing(d, animate) {
-  setDir('sw-dir', d.direction||'—');
-  document.getElementById('sw-bias').textContent = d.bias||'';
-  document.getElementById('sw-entry').textContent = d.entry_zone||'—';
-  document.getElementById('sw-tp').textContent = d.tp||'—';
-  document.getElementById('sw-sl').textContent = d.sl||'—';
-  document.getElementById('sw-dur').textContent = d.duration||'—';
-  document.getElementById('sw-reason').innerHTML =
+function renderSwing(d,animate){
+  setDir('sw-dir',d.direction||'—');
+  document.getElementById('sw-bias').textContent=d.bias||'';
+  document.getElementById('sw-entry').textContent=d.entry_zone||'—';
+  document.getElementById('sw-tp').textContent=d.tp||'—';
+  document.getElementById('sw-sl').textContent=d.sl||'—';
+  document.getElementById('sw-dur').textContent=d.duration||'—';
+  document.getElementById('sw-reason').innerHTML=
     `<strong>Setup:</strong> ${d.reason||'—'}<br><strong>Invalida:</strong> ${d.invalidation||'—'}`;
-  document.getElementById('sw-ts').textContent = `Generado: ${d.savedAt||'—'}`;
-
-  const st = document.getElementById('sw-status');
+  document.getElementById('sw-ts').textContent=`Generado: ${d.savedAt||'—'}`;
+  const st=document.getElementById('sw-status');
   if(d.confirmed){
-    st.textContent = `✓ Confirmado: ${d.confirmation_note||'sigue vigente'}`;
-    st.className = 'swing-status confirmed';
+    st.textContent=`✓ ${d.confirmation_note||'Plan vigente'}`;
+    st.className='swing-status confirmed';
   } else {
-    st.textContent = `Plan activo desde ${d.savedAt||'—'}`;
-    st.className = 'swing-status';
+    st.textContent=`Plan activo desde ${d.savedAt||'—'}`;
+    st.className='swing-status';
   }
-  if(animate) flash('sw-body');
+  if(animate)flash('sw-body');
 }
 
-async function callClaude(prompt) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
+// ── TWELVE DATA ──────────────────────────────────────────
+async function fetchTwelveData(){
+  const sym='XAU/USD';
+  const k=KEYS.twelve;
+
+  const [priceRes, rsiRes, atrRes, ema20Res, ema50Res, macdRes] = await Promise.all([
+    fetch(`https://api.twelvedata.com/quote?symbol=${sym}&apikey=${k}`),
+    fetch(`https://api.twelvedata.com/rsi?symbol=${sym}&interval=1h&time_period=14&outputsize=1&apikey=${k}`),
+    fetch(`https://api.twelvedata.com/atr?symbol=${sym}&interval=1h&time_period=14&outputsize=1&apikey=${k}`),
+    fetch(`https://api.twelvedata.com/ema?symbol=${sym}&interval=1h&time_period=20&outputsize=1&apikey=${k}`),
+    fetch(`https://api.twelvedata.com/ema?symbol=${sym}&interval=1h&time_period=50&outputsize=1&apikey=${k}`),
+    fetch(`https://api.twelvedata.com/macd?symbol=${sym}&interval=1h&outputsize=1&apikey=${k}`)
+  ]);
+
+  const [price, rsi, atr, ema20, ema50, macd] = await Promise.all([
+    priceRes.json(), rsiRes.json(), atrRes.json(),
+    ema20Res.json(), ema50Res.json(), macdRes.json()
+  ]);
+
+  const pv = parseFloat(price.close||price.price||0);
+  const prev = parseFloat(price.previous_close||0);
+  const chg = prev ? ((pv-prev)/prev*100).toFixed(2) : '0.00';
+  const chgUp = parseFloat(chg)>=0;
+
+  document.getElementById('d-price').textContent = pv ? `$${pv.toLocaleString('en-US',{minimumFractionDigits:2})}` : '—';
+  const chgEl = document.getElementById('d-change');
+  chgEl.textContent = `${chgUp?'+':''}${chg}% hoy`;
+  chgEl.className = chgUp ? 'change-up' : 'change-dn';
+  document.getElementById('d-time').textContent = `${price.exchange||'FOREX'} · ${getTime()}`;
+
+  const rsiV = parseFloat(rsi?.values?.[0]?.rsi||0);
+  const rsiEl = document.getElementById('d-rsi');
+  rsiEl.textContent = rsiV ? rsiV.toFixed(1) : '—';
+  rsiEl.className = 'dval '+(rsiV>70?'dn':rsiV<30?'up':'');
+
+  const atrV = parseFloat(atr?.values?.[0]?.atr||0);
+  document.getElementById('d-atr').textContent = atrV ? atrV.toFixed(2) : '—';
+
+  const e20 = parseFloat(ema20?.values?.[0]?.ema||0);
+  const e50 = parseFloat(ema50?.values?.[0]?.ema||0);
+  const ema20El = document.getElementById('d-ema20');
+  const ema50El = document.getElementById('d-ema50');
+  ema20El.textContent = e20 ? e20.toFixed(2) : '—';
+  ema50El.textContent = e50 ? e50.toFixed(2) : '—';
+  ema20El.className = 'dval '+(pv>e20?'up':'dn');
+  ema50El.className = 'dval '+(pv>e50?'up':'dn');
+
+  const macdV = parseFloat(macd?.values?.[0]?.macd||0);
+  const sigV  = parseFloat(macd?.values?.[0]?.signal||0);
+  const macdEl = document.getElementById('d-macd');
+  const sigEl  = document.getElementById('d-signal');
+  macdEl.textContent = macdV ? macdV.toFixed(2) : '—';
+  sigEl.textContent  = sigV  ? sigV.toFixed(2)  : '—';
+  macdEl.className   = 'dval '+(macdV>sigV?'up':'dn');
+  sigEl.className    = 'dval '+(macdV>sigV?'up':'dn');
+
+  marketData = {
+    price: pv, change: chg, rsi: rsiV, atr: atrV,
+    ema20: e20, ema50: e50, macd: macdV, macdSignal: sigV,
+    aboveEma20: pv>e20, aboveEma50: pv>e50, macdBull: macdV>sigV
+  };
+
+  return marketData;
+}
+
+// ── BRAVE SEARCH ─────────────────────────────────────────
+async function fetchNews(){
+  const queries = ['gold XAU USD price today','US Iran ceasefire deal gold','Federal Reserve FOMC gold','DXY dollar index today'];
+  const results = [];
+
+  for(const q of queries){
+    try{
+      const res = await fetch(
+        `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(q)}&count=2&freshness=pd`,
+        { headers:{ 'Accept':'application/json','Accept-Encoding':'gzip','X-Subscription-Token': KEYS.brave } }
+      );
+      const data = await res.json();
+      const hits = data?.web?.results||[];
+      hits.slice(0,2).forEach(h=>results.push({ title:h.title, desc:h.description||'' }));
+    } catch(e){ /* silent */ }
+  }
+
+  // Render
+  const nl = document.getElementById('news-list');
+  if(results.length===0){
+    nl.innerHTML='<span style="color:var(--muted);font-size:9px;">Sin noticias disponibles</span>';
+    newsContext = 'Sin noticias recientes disponibles.';
+    return;
+  }
+
+  nl.innerHTML = results.slice(0,6).map(r=>
+    `<div class="news-item"><strong>${r.title}</strong><br>${r.desc}</div>`
+  ).join('');
+
+  newsContext = results.slice(0,6).map(r=>`- ${r.title}: ${r.desc}`).join('\n');
+}
+
+// ── CLAUDE ───────────────────────────────────────────────
+function buildMacroContext(){
+  return `DATOS TÉCNICOS EN TIEMPO REAL (XAU/USD):
+Precio: $${marketData.price}
+Cambio: ${marketData.change}%
+RSI(14): ${marketData.rsi} ${marketData.rsi>70?'(SOBRECOMPRADO)':marketData.rsi<30?'(SOBREVENDIDO)':''}
+ATR(14): ${marketData.atr}
+EMA20: ${marketData.ema20} (precio ${marketData.aboveEma20?'ENCIMA':'DEBAJO'})
+EMA50: ${marketData.ema50} (precio ${marketData.aboveEma50?'ENCIMA':'DEBAJO'})
+MACD: ${marketData.macd} | Señal: ${marketData.macdSignal} (${marketData.macdBull?'BULLISH':'BEARISH'})
+
+NOTICIAS MACRO RECIENTES:
+${newsContext}`;
+}
+
+async function callClaude(prompt){
+  const res = await fetch(ANTHROPIC_URL,{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key': KEYS.claude,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 800,
-      messages: [{ role:'user', content: prompt }]
+      model:'claude-sonnet-4-20250514',
+      max_tokens:600,
+      messages:[{role:'user',content:prompt}]
     })
   });
   const data = await res.json();
@@ -449,147 +427,128 @@ async function callClaude(prompt) {
   return JSON.parse(raw.replace(/```json|```/g,'').trim());
 }
 
-async function generateSwing() {
+async function doSwing(){
   document.getElementById('sw-ov').classList.add('show');
-  setWf(1);
-  const parsed = await callClaude(`Eres trader swing de XAU/USD. Genera un plan swing de 1-7 días.
-
-${MACRO}
-
-Responde SOLO JSON sin markdown:
-{"direction":"BUY o SELL","bias":"5 palabras","entry_zone":"zona","tp":"TP1 / TP2","sl":"stop","duration":"X días","reason":"2 oraciones","invalidation":"qué lo invalida","confirmed":false,"confirmation_note":""}`);
-
-  parsed.savedAt = getTime();
-  saveSwing(parsed);
-  renderSwing(parsed, true);
-  document.getElementById('sw-ov').classList.remove('show');
-}
-
-async function verifySwing() {
   const existing = loadSwing();
-  if(!existing) { await generateSwing(); return; }
-  document.getElementById('sw-ov').classList.add('show');
-  setWf(2);
+  const macro = buildMacroContext();
 
-  const parsed = await callClaude(`Eres trader swing de XAU/USD. MANTÉN la consistencia del plan, no lo reinventes.
+  let prompt;
+  if(!existing){
+    prompt=`Eres trader swing XAU/USD. Genera plan swing 1-7 días basado en datos reales.
 
-${MACRO}
-
-PLAN ACTIVO:
-- Dirección: ${existing.direction}
-- Entrada: ${existing.entry_zone} | TP: ${existing.tp} | SL: ${existing.sl}
-- Setup: ${existing.reason}
-- Invalidación: ${existing.invalidation}
-- Desde: ${existing.savedAt}
-
-REGLAS: Un swing dura 1-7 días. NO cambia por ruido de horas. Solo cambia direction si hubo evento macro MAYOR que lo invalida.
+${macro}
 
 Responde SOLO JSON sin markdown:
-{"direction":"igual o nuevo si hay razón mayor","bias":"5 palabras","entry_zone":"ajustada o igual","tp":"TP1 / TP2","sl":"stop","duration":"tiempo restante","reason":"2 oraciones","invalidation":"qué lo invalida","confirmed":true o false,"confirmation_note":"si confirmed=true: frase corta"}`);
+{"direction":"BUY o SELL","bias":"5 palabras","entry_zone":"precio","tp":"TP1 / TP2","sl":"stop","duration":"X días","reason":"2 oraciones con datos técnicos","invalidation":"qué lo invalida","confirmed":false,"confirmation_note":""}`;
+  } else {
+    prompt=`Eres trader swing XAU/USD. MANTÉN consistencia del plan activo.
 
-  parsed.savedAt = existing.savedAt;
+${macro}
+
+PLAN ACTIVO (desde ${existing.savedAt}):
+Dirección: ${existing.direction} | Entrada: ${existing.entry_zone} | TP: ${existing.tp} | SL: ${existing.sl}
+Setup: ${existing.reason}
+Invalidación: ${existing.invalidation}
+
+REGLA: Un swing dura 1-7 días. Solo cambia direction si el macro lo invalida claramente. Usa los datos técnicos reales para confirmar o ajustar niveles.
+
+Responde SOLO JSON sin markdown:
+{"direction":"igual o nuevo","bias":"5 palabras","entry_zone":"zona","tp":"TP1 / TP2","sl":"stop","duration":"tiempo restante","reason":"2 oraciones con datos técnicos","invalidation":"qué lo invalida","confirmed":true o false,"confirmation_note":"frase si confirmed=true"}`;
+  }
+
+  const parsed = await callClaude(prompt);
+  parsed.savedAt = existing ? existing.savedAt : getTime();
   saveSwing(parsed);
-  renderSwing(parsed, true);
+  renderSwing(parsed,true);
   document.getElementById('sw-ov').classList.remove('show');
 }
 
-async function generateScalp() {
+async function doScalp(){
   document.getElementById('sc-ov').classList.add('show');
-  setWf(3);
   const swing = loadSwing();
+  const macro = buildMacroContext();
   const swingCtx = swing
-    ? `Swing activo: ${swing.direction} | Entrada: ${swing.entry_zone} | TP: ${swing.tp}. El scalp debe ser coherente con esta dirección.`
+    ? `Swing activo: ${swing.direction} | TP: ${swing.tp} | SL: ${swing.sl}. El scalp debe alinearse con esta dirección.`
     : 'Sin swing activo.';
 
-  const parsed = await callClaude(`Eres scalper XAU/USD. Setup para próximos 15-60 min.
+  const parsed = await callClaude(`Eres scalper XAU/USD. Setup inmediato 15-60 min.
 
-${MACRO}
+${macro}
 ${swingCtx}
 Hora: ${getTime()} ECT.
 
 Responde SOLO JSON sin markdown:
-{"direction":"BUY o SELL o WAIT","bias":"5 palabras","entry_zone":"zona","tp":"target","sl":"stop","timeframe":"M5/M15/H1","reason":"2 oraciones con catalizador concreto"}`);
+{"direction":"BUY o SELL o WAIT","bias":"5 palabras","entry_zone":"precio","tp":"target","sl":"stop","timeframe":"M5/M15/H1","reason":"2 oraciones con datos técnicos concretos"}`);
 
-  setDir('sc-dir', parsed.direction||'WAIT');
-  document.getElementById('sc-bias').textContent = parsed.bias||'';
-  document.getElementById('sc-entry').textContent = parsed.entry_zone||'—';
-  document.getElementById('sc-tp').textContent = parsed.tp||'—';
-  document.getElementById('sc-sl').textContent = parsed.sl||'—';
-  document.getElementById('sc-tf').textContent = parsed.timeframe||'—';
-  document.getElementById('sc-reason').innerHTML = `<strong>Trigger:</strong> ${parsed.reason||'—'}`;
-  document.getElementById('sc-ts').textContent = `Actualizado: ${getTime()}`;
+  setDir('sc-dir',parsed.direction||'WAIT');
+  document.getElementById('sc-bias').textContent=parsed.bias||'';
+  document.getElementById('sc-entry').textContent=parsed.entry_zone||'—';
+  document.getElementById('sc-tp').textContent=parsed.tp||'—';
+  document.getElementById('sc-sl').textContent=parsed.sl||'—';
+  document.getElementById('sc-tf').textContent=parsed.timeframe||'—';
+  document.getElementById('sc-reason').innerHTML=`<strong>Trigger:</strong> ${parsed.reason||'—'}`;
+  document.getElementById('sc-ts').textContent=`Actualizado: ${getTime()}`;
   flash('sc-body');
   document.getElementById('sc-ov').classList.remove('show');
 }
 
-async function runAll() {
-  const btn = document.getElementById('btn-main');
-  btn.disabled = true;
-  const stopBar = animBar(true);
-
-  try {
-    const existing = loadSwing();
-    if(existing) {
-      await verifySwing();
-    } else {
-      await generateSwing();
-    }
-    await generateScalp();
+async function runAll(){
+  const btn=document.getElementById('btn-main');
+  btn.disabled=true;
+  const stopBar=animBar(true);
+  try{
+    setWf(1);
+    await fetchTwelveData();
+    setWf(2);
+    await fetchNews();
+    setWf(3);
+    await doSwing();
     setWf(4);
-  } catch(e) {
+    await doScalp();
+    setWf(5);
+  } catch(e){
     console.error(e);
-    document.getElementById('sw-reason').innerHTML = `<strong>Error:</strong> ${e.message}`;
-    setWf(0);
-  } finally {
+    document.getElementById('sw-reason').innerHTML=`<strong class="err">Error:</strong> ${e.message}`;
+  } finally{
     stopBar();
-    btn.disabled = false;
+    btn.disabled=false;
   }
 }
 
-function resetSwing() {
-  localStorage.removeItem(SWING_KEY);
+function resetSwing(){ localStorage.removeItem(SWING_KEY); runAll(); }
+
+function resetKeys(){ localStorage.removeItem(KEYS_KEY); location.reload(); }
+
+function startApp(){
+  const c=document.getElementById('k-claude').value.trim();
+  const t=document.getElementById('k-twelve').value.trim();
+  const b=document.getElementById('k-brave').value.trim();
+  if(!c.startsWith('sk-ant')){alert('API key de Claude inválida.');return;}
+  if(!t){alert('Falta Twelve Data key.');return;}
+  if(!b){alert('Falta Brave key.');return;}
+  KEYS={claude:c,twelve:t,brave:b};
+  localStorage.setItem(KEYS_KEY,JSON.stringify(KEYS));
+  initDashboard();
+}
+
+function initDashboard(){
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('dashboard').style.display='block';
+  document.getElementById('hdr-tag').textContent='LIVE';
+  const sw=loadSwing();
+  if(sw) renderSwing(sw,false);
   runAll();
 }
 
-function startApp() {
-  const key = document.getElementById('api-input').value.trim();
-  if(!key.startsWith('sk-ant')) {
-    alert('API key inválida. Debe empezar con sk-ant...');
-    return;
-  }
-  apiKey = key;
-  localStorage.setItem(APIKEY_KEY, key);
-  document.getElementById('api-screen').style.display = 'none';
-  document.getElementById('dashboard').style.display = 'block';
-  document.getElementById('hdr-tag').textContent = 'LIVE';
-
-  // Si hay swing guardado, renderizarlo de inmediato
-  const saved = loadSwing();
-  if(saved) renderSwing(saved, false);
-
-  // Auto-run
-  runAll();
-}
-
-function resetKey() {
-  localStorage.removeItem(APIKEY_KEY);
-  location.reload();
-}
-
-// Init: check saved key
+// INIT
 (function(){
-  const saved = localStorage.getItem(APIKEY_KEY);
-  if(saved) {
-    document.getElementById('api-input').value = saved;
-    apiKey = saved;
-    // auto-start
-    document.getElementById('api-screen').style.display = 'none';
-    document.getElementById('dashboard').style.display = 'block';
-    document.getElementById('hdr-tag').textContent = 'LIVE';
-    const sw = loadSwing();
-    if(sw) renderSwing(sw, false);
-    runAll();
-  }
+  try{
+    const saved=JSON.parse(localStorage.getItem(KEYS_KEY));
+    if(saved?.claude&&saved?.twelve&&saved?.brave){
+      KEYS=saved;
+      initDashboard();
+    }
+  }catch{}
 })();
 </script>
 </body>
