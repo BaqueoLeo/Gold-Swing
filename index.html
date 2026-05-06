@@ -196,6 +196,7 @@ body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;m
           <div class="lbox"><div class="llabel">TP1 / TP2</div><div class="lval tp" id="sw-tp">—</div></div>
           <div class="lbox"><div class="llabel">Stop</div><div class="lval sl" id="sw-sl">—</div></div>
           <div class="lbox"><div class="llabel">Duración</div><div class="lval gv" id="sw-dur">—</div></div>
+          <div class="lbox"><div class="llabel">R:R</div><div class="lval" id="sw-rr">—</div></div>
         </div>
         <div class="reason" id="sw-reason">—</div>
         <div class="swing-status" id="sw-status">Sin plan activo</div>
@@ -217,6 +218,7 @@ body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;m
           <div class="lbox"><div class="llabel">TP</div><div class="lval tp" id="sc-tp">—</div></div>
           <div class="lbox"><div class="llabel">SL</div><div class="lval sl" id="sc-sl">—</div></div>
           <div class="lbox"><div class="llabel">Timeframe</div><div class="lval gv" id="sc-tf">—</div></div>
+          <div class="lbox"><div class="llabel">R:R</div><div class="lval" id="sc-rr">—</div></div>
         </div>
         <div class="reason" id="sc-reason">—</div>
       </div>
@@ -242,6 +244,66 @@ let marketData = {};
 let newsContext = '';
 
 function getTime(){ return new Date().toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}); }
+
+function calcRR(entry, tp, sl){
+  const en = parseFloat(entry);
+  const t = parseFloat(tp?.toString().split('/')[0]);
+  const s = parseFloat(sl);
+  if(!en || !t || !s) return null;
+  const reward = Math.abs(t - en);
+  const risk = Math.abs(en - s);
+  if(!risk) return null;
+  return (reward / risk).toFixed(1);
+}
+
+function getRRColor(rr){
+  const v = parseFloat(rr);
+  if(v>=2) return 'up';
+  if(v>=1.5) return 'gv';
+  return 'dn';
+}
+
+function notifyIfGoodTrade(direction, rr, type){
+  if(!direction || direction==='WAIT' || direction==='—') return;
+  const rrVal = parseFloat(rr);
+  if(rrVal < 1.5) return;
+  if('Notification' in window && Notification.permission==='granted'){
+    new Notification(`Gold-Swing: ${type} ${direction}`,{
+      body:`R:R ${rrVal} — Revisa el dashboard`,
+      icon:'https://raw.githubusercontent.com/BaqueoLeo/Gold-Swing/main/favicon.ico'
+    });
+  }
+}
+
+function calcRR(entry, tp, sl){
+  const en = parseFloat(entry);
+  const t = parseFloat(tp?.toString().split('/')[0]);
+  const s = parseFloat(sl);
+  if(!en || !t || !s) return null;
+  const reward = Math.abs(t - en);
+  const risk = Math.abs(en - s);
+  if(!risk) return null;
+  return (reward / risk).toFixed(1);
+}
+
+function getRRColor(rr){
+  const v = parseFloat(rr);
+  if(v>=2) return 'up';
+  if(v>=1.5) return 'gv';
+  return 'dn';
+}
+
+function notifyIfGoodTrade(direction, rr, type){
+  if(!direction || direction==='WAIT' || direction==='—') return;
+  const rrVal = parseFloat(rr);
+  if(rrVal < 1.5) return;
+  if('Notification' in window && Notification.permission==='granted'){
+    new Notification(`Gold-Swing: ${type} ${direction}`,{
+      body:`R:R ${rrVal} — Revisa el dashboard`,
+      icon:'https://raw.githubusercontent.com/BaqueoLeo/Gold-Swing/main/favicon.ico'
+    });
+  }
+}
 
 function setWf(n){
   for(let i=1;i<=5;i++){
@@ -280,6 +342,10 @@ function renderSwing(d,animate){
   document.getElementById('sw-tp').textContent=d.tp||'—';
   document.getElementById('sw-sl').textContent=d.sl||'—';
   document.getElementById('sw-dur').textContent=d.duration||'—';
+  const rr = calcRR(d.entry_zone, d.tp, d.sl);
+  const rrEl = document.getElementById('sw-rr');
+  if(rr){ rrEl.textContent = '1:'+rr; rrEl.className = 'lval '+getRRColor(rr); }
+  else { rrEl.textContent = '—'; rrEl.className = 'lval'; }
   document.getElementById('sw-reason').innerHTML=
     `<strong>Setup:</strong> ${d.reason||'—'}<br><strong>Invalida:</strong> ${d.invalidation||'—'}`;
   document.getElementById('sw-ts').textContent=`Generado: ${d.savedAt||'—'}`;
@@ -292,6 +358,7 @@ function renderSwing(d,animate){
     st.className='swing-status';
   }
   if(animate)flash('sw-body');
+  notifyIfGoodTrade(d.direction, rr, 'SWING');
 }
 
 // ── TWELVE DATA ──────────────────────────────────────────
@@ -424,7 +491,10 @@ async function callClaude(prompt){
   const data = await res.json();
   if(data.error) throw new Error(data.error.message);
   const raw = data.content.find(b=>b.type==='text')?.text||'{}';
-  return JSON.parse(raw.replace(/```json|```/g,'').trim());
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('Claude no devolvió JSON válido');
+  return JSON.parse(match[0]);
+}
 }
 
 async function doSwing(){
@@ -486,10 +556,15 @@ Responde SOLO JSON sin markdown:
   document.getElementById('sc-tp').textContent=parsed.tp||'—';
   document.getElementById('sc-sl').textContent=parsed.sl||'—';
   document.getElementById('sc-tf').textContent=parsed.timeframe||'—';
+  const rr = calcRR(parsed.entry_zone, parsed.tp, parsed.sl);
+  const rrEl = document.getElementById('sc-rr');
+  if(rr){ rrEl.textContent = '1:'+rr; rrEl.className = 'lval '+getRRColor(rr); }
+  else { rrEl.textContent = '—'; rrEl.className = 'lval'; }
   document.getElementById('sc-reason').innerHTML=`<strong>Trigger:</strong> ${parsed.reason||'—'}`;
   document.getElementById('sc-ts').textContent=`Actualizado: ${getTime()}`;
   flash('sc-body');
   document.getElementById('sc-ov').classList.remove('show');
+  notifyIfGoodTrade(parsed.direction, rr, 'SCALP');
 }
 
 async function runAll(){
@@ -538,6 +613,15 @@ function initDashboard(){
   const sw=loadSwing();
   if(sw) renderSwing(sw,false);
   runAll();
+  // Auto-refresh every 10 minutes
+  setInterval(async ()=>{
+    try{ await fetchTwelveData(); await doScalp(); }
+    catch(e){ console.error('Auto-refresh error:',e); }
+  }, 10*60*1000);
+  // Request notification permission
+  if('Notification' in window && Notification.permission==='default'){
+    Notification.requestPermission();
+  }
 }
 
 // INIT
