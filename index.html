@@ -495,7 +495,6 @@ async function callClaude(prompt){
   if (!match) throw new Error('Claude no devolvió JSON válido');
   return JSON.parse(match[0]);
 }
-}
 
 async function doSwing(){
   document.getElementById('sw-ov').classList.add('show');
