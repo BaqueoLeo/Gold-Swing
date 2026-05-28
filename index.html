@@ -854,13 +854,49 @@ async function fetchNews(){
 }
 
 function buildCtx(){
-  return `XAU/USD TIEMPO REAL:
-Precio: $${marketData.price} (${parseFloat(marketData.changePct)>=0?'+':''}${marketData.changePct}%)
-RSI(14): ${marketData.rsi}${marketData.rsi>70?' [SOBRECOMPRADO]':marketData.rsi<30?' [SOBREVENDIDO]':''}
-ATR: ${marketData.atr} | EMA20: ${marketData.ema20} (${marketData.aboveEma20?'encima':'debajo'}) | EMA50: ${marketData.ema50} (${marketData.aboveEma50?'encima':'debajo'})
-MACD: ${marketData.macd} > Señal: ${marketData.macdSignal} → ${marketData.macdBull?'BULLISH':'BEARISH'}
-NOTICIAS: ${newsContext}
-MACRO: FOMC 28-29 abr · EEUU-Irán · Ormuz cerrado`;
+  const d=marketData;
+  const priceVsE20=d.ema20?((d.price-d.ema20)/d.ema20*100).toFixed(2):0;
+  const priceVsE50=d.ema50?((d.price-d.ema50)/d.ema50*100).toFixed(2):0;
+  const macdHist=d.macd&&d.macdSignal?(d.macd-d.macdSignal).toFixed(2):'?';
+  const trend=d.aboveEma20&&d.aboveEma50?'ALCISTA':!d.aboveEma20&&!d.aboveEma50?'BAJISTA':'MIXTA';
+  const momentum=d.macdBull&&d.rsi>50?'POSITIVO':!d.macdBull&&d.rsi<50?'NEGATIVO':'NEUTRAL';
+  const volatility=d.atr?d.atr>20?'ALTA':d.atr>12?'MEDIA':'BAJA':'?';
+  return `═══ XAU/USD — DATOS EN TIEMPO REAL ═══
+
+PRECIO: $${d.price} (${parseFloat(d.changePct)>=0?'+':''}${d.changePct}% hoy)
+
+── TENDENCIA ──────────────────────────────
+EMA20:  ${d.ema20} → precio ${priceVsE20>0?'+':''}${priceVsE20}% ${d.aboveEma20?'ENCIMA':'DEBAJO'}
+EMA50:  ${d.ema50} → precio ${priceVsE50>0?'+':''}${priceVsE50}% ${d.aboveEma50?'ENCIMA':'DEBAJO'}
+Sesgo tendencial: ${trend}
+${d.aboveEma20&&!d.aboveEma50?'⚠ EMA20 > precio > EMA50 — zona de decisión':d.ema20&&d.ema50&&d.ema20>d.ema50?'EMA20 > EMA50 → estructura alcista':'EMA20 < EMA50 → estructura bajista'}
+
+── MOMENTUM ───────────────────────────────
+RSI(14): ${d.rsi}${d.rsi>70?' → SOBRECOMPRADO, posible reversión':d.rsi>60?' → Momentum alcista fuerte':d.rsi<30?' → SOBREVENDIDO, posible rebote':d.rsi<40?' → Momentum bajista fuerte':' → Zona neutral'}
+MACD: ${d.macd} | Señal: ${d.macdSignal} | Histograma: ${macdHist}
+MACD vs Señal: ${d.macdBull?'MACD por encima → momentum alcista':'MACD por debajo → momentum bajista'}
+Momentum general: ${momentum}
+
+── VOLATILIDAD ────────────────────────────
+ATR(14): ${d.atr} → volatilidad ${volatility}
+Rango esperado por vela H1: ±$${d.atr}
+Stop mínimo técnico: $${d.atr?(d.atr*1.2).toFixed(2):'?'} (1.2× ATR)
+
+── NIVELES TÉCNICOS CLAVE ─────────────────
+EMA20: $${d.ema20} → soporte/resistencia dinámica primaria
+EMA50: $${d.ema50} → soporte/resistencia dinámica secundaria
+Zona de confluencia: ${d.ema20&&d.ema50&&Math.abs(d.ema20-d.ema50)<d.atr*2?`$${Math.min(d.ema20,d.ema50).toFixed(2)}–$${Math.max(d.ema20,d.ema50).toFixed(2)} (EMAs juntas = zona fuerte)`:'EMAs separadas, sin confluencia inmediata'}
+
+── NOTICIAS MACRO ─────────────────────────
+${newsContext}
+
+── CONTEXTO GEOPOLÍTICO/MACRO ─────────────
+• FOMC próxima reunión: 28-29 abr — tasas impactan directo en XAU
+• EEUU-Irán: negociaciones activas, ceasefire en curso
+• Estrecho de Ormuz: cerrado → presión alcista en commodities
+• Gold es activo refugio — riesgo geopolítico = sesgo largo estructural
+
+═══════════════════════════════════════════`;
 }
 
 function renderSwing(d,animate){
@@ -886,24 +922,77 @@ async function doSwing(){
   const existing=loadSwing(),ctx=buildCtx();
   let prompt;
   if(!existing){
-    prompt=`Eres un trader profesional de XAU/USD. Analiza TODOS los datos técnicos y macroeconómicos con profundidad antes de responder.
+    prompt=`Eres un trader profesional especializado en XAU/USD con amplia experiencia en análisis técnico y macro. Analiza cada dato con profundidad.
 
 ${ctx}
 
-TAREA: Genera un plan SWING completo para XAU/USD con horizonte de 1-7 días.
-- Analiza la tendencia en H4 y D1 usando EMA20/EMA50
-- Evalúa el momentum con RSI y MACD
-- Considera el contexto macro y las noticias
-- Define niveles de entrada precisos, no zonas amplias
-- El R:R mínimo aceptable es 1:2
-- Justifica cada nivel con datos técnicos reales
+═══ INSTRUCCIONES — PLAN SWING NUEVO ═══
 
-Responde ÚNICAMENTE con este JSON (sin markdown, sin texto extra):
-{"direction":"BUY o SELL","bias":"descripción en 5 palabras","entry_zone":"precio exacto o rango estrecho","tp":"TP1 / TP2","sl":"precio exacto del stop","duration":"X-Y días","reason":"análisis técnico detallado en 3 oraciones usando los datos reales","invalidation":"evento concreto que invalida el plan","confirmed":false,"confirmation_note":""}`;
+Razona sistemáticamente antes de generar el JSON:
+
+1. TENDENCIA (EMA20 vs EMA50 vs precio):
+   - ¿Precio sobre ambas EMAs? → sesgo alcista
+   - ¿Precio bajo ambas EMAs? → sesgo bajista
+   - ¿Entre las dos? → zona de decisión, esperar confirmación
+
+2. MOMENTUM (RSI + MACD):
+   - RSI < 30: sobrevendido → favorece BUY
+   - RSI > 70: sobrecomprado → favorece SELL
+   - MACD > Señal: momentum alcista
+   - MACD < Señal: momentum bajista
+   - ¿RSI y MACD están alineados con la tendencia?
+
+3. VOLATILIDAD Y NIVELES:
+   - Stop = 1.5× ATR mínimo (no negociable)
+   - TP1 = 2.5× ATR desde entrada, TP2 = 4× ATR
+   - Identifica niveles redondos psicológicos cercanos al precio
+
+4. MACRO Y CATALIZADORES:
+   - ¿Las noticias son pro-risk o risk-off?
+   - Gold = activo refugio: riesgo geopolítico favorece BUY
+   - FOMC hawkish → USD sube → presión bajista XAU
+   - FOMC dovish → USD baja → presión alcista XAU
+
+5. VALIDACIÓN DEL SETUP:
+   - R:R mínimo 1:2 obligatorio
+   - Al menos 2 factores técnicos deben confirmar la dirección
+   - Si solo 1 factor confirma → WAIT
+
+RESPONDE ÚNICAMENTE con este JSON válido (sin markdown ni texto adicional):
+{"direction":"BUY o SELL","bias":"descripción del sesgo en 7-10 palabras","entry_zone":"precio exacto o rango máximo 20 puntos","tp":"TP1_precio / TP2_precio","sl":"precio exacto del stop loss","duration":"X-Y días","reason":"análisis completo de mínimo 5 oraciones: (1) tendencia estructural con valores de EMA reales, (2) lectura de RSI y MACD con números reales, (3) cálculo del R:R y justificación del stop, (4) catalizador macro más relevante, (5) conclusión de por qué este setup tiene ventaja ahora","invalidation":"dos eventos concretos con niveles de precio que invalidarían el plan","confirmed":false,"confirmation_note":""}`;
   }else{
-    prompt=`Trader swing XAU/USD. MANTÉN el plan — no reinventes.\n\n${ctx}\n\nPLAN (${existing.savedAt}): ${existing.direction}|${existing.entry_zone}|TP${existing.tp}|SL${existing.sl}\n\nREGLA: 1-7 días. Solo cambia direction si macro lo invalida.\n\nSOLO JSON:\n{"direction":"igual o nuevo","bias":"5 palabras","entry_zone":"zona","tp":"TP1/TP2","sl":"stop","duration":"tiempo restante","reason":"2 oraciones","invalidation":"qué lo invalida","confirmed":true o false,"confirmation_note":"si confirmed"}`;
+    prompt=`Eres un trader profesional de XAU/USD revisando un plan swing activo. Tu trabajo es confirmar o actualizar con base en los datos actuales.
+
+${ctx}
+
+═══ PLAN SWING ACTIVO ═══
+Creado: ${existing.savedAt}
+Dirección: ${existing.direction}
+Entrada: ${existing.entry_zone}
+TP: ${existing.tp} | SL: ${existing.sl}
+Duración original: ${existing.duration}
+Razón original: ${existing.reason}
+Invalidación: ${existing.invalidation}
+
+═══ INSTRUCCIONES DE REVISIÓN ═══
+
+Antes de responder, evalúa mentalmente:
+- ¿Precio actual $${marketData.price} vs entrada ${existing.entry_zone}: ¿dentro de zona, por encima, por debajo?
+- ¿RSI ${marketData.rsi} confirma o contradice ${existing.direction}?
+- ¿MACD ${marketData.macd} vs Señal ${marketData.macdSignal}: alineado con ${existing.direction}?
+- ¿EMA20 ${marketData.ema20} y EMA50 ${marketData.ema50}: misma configuración que cuando se abrió el plan?
+- ¿Noticias recientes: apoyan o contradicen el plan?
+
+REGLAS ABSOLUTAS:
+- Swing 1-7 días: NO cambia por ruido de horas
+- Solo cambia direction si: noticia macro importante contradice, O precio superó SL, O RSI+MACD AMBOS se oponen a la dirección
+- Si plan sigue válido: confirmed=true, ajusta niveles solo si ATR cambió significativamente
+- Si cambias direction: mínimo 3 razones técnicas con datos reales
+
+RESPONDE ÚNICAMENTE con este JSON válido (sin markdown ni texto adicional):
+{"direction":"igual o nuevo con justificación","bias":"sesgo actual en 7-10 palabras","entry_zone":"zona actualizada o igual","tp":"TP1 / TP2 con precios exactos","sl":"stop actualizado","duration":"tiempo restante estimado","reason":"evaluación del plan en mínimo 4 oraciones: estado actual vs plan original, qué indicadores confirman, qué cambió, por qué la dirección es correcta o debe cambiar","invalidation":"dos condiciones específicas con precios que invalidarían el plan","confirmed":true o false,"confirmation_note":"si confirmed=true: explica en 2 oraciones por qué el plan original sigue vigente basándote en los datos actuales"}`;
   }
-  const parsed=await callAI(prompt,500);
+  const parsed=await callAI(prompt,3000);
   parsed.savedAt=existing?existing.savedAt:getTime();
   saveSwing(parsed);renderSwing(parsed,true);
   document.getElementById('sw-ov').classList.remove('show');
@@ -915,22 +1004,40 @@ async function doScalp(){
   document.getElementById('sc-ov').classList.add('show');
   const swing=loadSwing(),ctx=buildCtx();
   const parsed=await callAI(
-    `Eres un scalper profesional de XAU/USD. Analiza los datos técnicos y el contexto actual para generar un setup de entrada inmediato.
+    `Eres un scalper profesional de XAU/USD. Tu análisis debe ser preciso y basado en los datos en tiempo real.
 
 ${ctx}
 
-Swing activo: ${swing?swing.direction+' — entrada '+swing.entry_zone+', TP '+swing.tp+', SL '+swing.sl:'Sin swing activo'}
+═══ CONTEXTO DEL SCALP ═══
+Swing activo: ${swing?swing.direction+' | Entrada: '+swing.entry_zone+' | TP: '+swing.tp+' | SL: '+swing.sl:'Sin swing activo — analizar estructura independiente'}
 Hora actual: ${getTime()} ECT (UTC-5)
 
-TAREA: Genera un setup SCALP para los próximos 15-60 minutos.
-- Identifica el momentum inmediato con RSI y MACD en H1
-- Verifica si el precio está cerca de soporte/resistencia clave (EMAs, niveles redondos)
-- El scalp debe alinearse con el swing cuando sea posible
-- Si no hay setup claro, devuelve direction: "WAIT"
-- R:R mínimo 1:1.5
+═══ INSTRUCCIONES DE ANÁLISIS SCALP ═══
 
-Responde ÚNICAMENTE con este JSON (sin markdown, sin texto extra):
-{"direction":"BUY o SELL o WAIT","bias":"descripción en 5 palabras","entry_zone":"precio exacto","tp":"precio target","sl":"precio stop exacto","timeframe":"M5, M15 o H1","reason":"análisis técnico en 2 oraciones con los datos reales del momento"}`,
+Razona paso a paso antes de responder:
+
+1. MOMENTUM INMEDIATO (H1/M15):
+   - RSI actual \${marketData.rsi}: ¿está en zona de momentum o agotamiento?
+   - MACD histograma: ¿expandiendo o contrayendo en este momento?
+   - ¿El precio está acelerando o decelerando?
+
+2. ESTRUCTURA DE PRECIO:
+   - ¿Precio cerca de EMA20 (\${marketData.ema20}) → nivel de reacción probable?
+   - ¿Precio cerca de EMA50 (\${marketData.ema50}) → soporte/resistencia más fuerte?
+   - ¿Hay nivel psicológico redondo cercano? (múltiplos de 50 o 100)
+
+3. ALINEACIÓN CON SWING:
+   - ¿El setup va a favor del swing activo? (preferible)
+   - Si va en contra: ¿hay razón técnica sólida para el contra-trend?
+
+4. GESTIÓN DE RIESGO:
+   - Stop: 0.8× ATR (\${marketData.atr?(marketData.atr*0.8).toFixed(1):'?'} puntos)
+   - TP: mínimo 1.2× ATR desde entrada
+   - Si RSI extremo (>70 o <30): mayor probabilidad de reversión
+   - Si no hay setup claro con R:R ≥ 1:1.5: direction debe ser WAIT
+
+RESPONDE ÚNICAMENTE con este JSON (sin markdown, sin texto extra):
+{"direction":"BUY o SELL o WAIT","bias":"descripción del setup en 6-8 palabras","entry_zone":"precio exacto o rango de máx 10 puntos","tp":"precio target exacto","sl":"precio stop exacto","timeframe":"M5, M15 o H1","reason":"análisis completo en 3-4 oraciones: momentum actual, nivel técnico clave, alineación con swing, y gestión del riesgo"}`,
     2000
   );
   setDir('sc-dir',parsed.direction||'WAIT');
